@@ -23,10 +23,7 @@ socket.on("m", (data) => {
     exchange,
     fromSymbol,
     toSymbol,
-    ,
-    ,
     tradeTimeStr,
-    ,
     tradePriceStr,
   ] = data.split("~");
 

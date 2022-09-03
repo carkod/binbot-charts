@@ -32,10 +32,8 @@ const configurationData = {
   }],
   symbols_types: [{
     name: "crypto",
-    // `symbolType` argument for the `searchSymbols` method, if a user selects this symbol type
     value: "crypto"
-  } // ...
-  ]
+  }]
 };
 
 async function getAllSymbols() {
@@ -65,6 +63,7 @@ class Datafeed {}
 exports.default = Datafeed;
 
 _defineProperty(Datafeed, "onReady", callback => {
+  debugger;
   console.log("[onReady]: Method call");
   setTimeout(() => callback(configurationData));
 });
@@ -170,14 +169,4 @@ _defineProperty(Datafeed, "getBars", async (symbolInfo, resolution, periodParams
     console.log("[getBars]: Get error", error);
     onErrorCallback(error);
   }
-});
-
-_defineProperty(Datafeed, "subscribeBars", (symbolInfo, resolution, onRealtimeCallback, subscribeUID, onResetCacheNeededCallback) => {
-  console.log("[subscribeBars]: Method call with subscribeUID:", subscribeUID);
-  (0, _streaming.subscribeOnStream)(symbolInfo, resolution, onRealtimeCallback, subscribeUID, onResetCacheNeededCallback, lastBarsCache.get(symbolInfo.full_name));
-});
-
-_defineProperty(Datafeed, "unsubscribeBars", subscriberUID => {
-  console.log("[unsubscribeBars]: Method call with subscriberUID:", subscriberUID);
-  (0, _streaming.unsubscribeFromStream)(subscriberUID);
 });

@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import "./App.css";
-import TVChartContainer from "./lib/components/TVChartContainer";
+import TVChartContainer from "./components/TVChartContainer";
 
 class App extends Component {
   render() {
@@ -8,8 +8,8 @@ class App extends Component {
       <>
         Test chart
         <TVChartContainer
-          symbol="AAPL"
-          interval="D"
+          symbol="Binance:APE/USDT"
+          interval="15m"
         />
       </>
     );

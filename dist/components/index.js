@@ -10,6 +10,6 @@ Object.defineProperty(exports, "TVChartContainer", {
   }
 });
 
-var _TVChartContainer = _interopRequireDefault(require("./components/TVChartContainer"));
+var _TVChartContainer = _interopRequireDefault(require("./TVChartContainer"));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }

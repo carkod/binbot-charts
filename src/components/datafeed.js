@@ -168,32 +168,32 @@ export default class Datafeed {
     }
   };
 
-  // static subscribeBars = (
-  //   symbolInfo,
-  //   resolution,
-  //   onRealtimeCallback,
-  //   subscribeUID,
-  //   onResetCacheNeededCallback
-  // ) => {
-  //   console.log(
-  //     "[subscribeBars]: Method call with subscribeUID:",
-  //     subscribeUID
-  //   );
-  //   subscribeOnStream(
-  //     symbolInfo,
-  //     resolution,
-  //     onRealtimeCallback,
-  //     subscribeUID,
-  //     onResetCacheNeededCallback,
-  //     lastBarsCache.get(symbolInfo.full_name)
-  //   );
-  // };
+  static subscribeBars = (
+    symbolInfo,
+    resolution,
+    onRealtimeCallback,
+    subscribeUID,
+    onResetCacheNeededCallback
+  ) => {
+    console.log(
+      "[subscribeBars]: Method call with subscribeUID:",
+      subscribeUID
+    );
+    subscribeOnStream(
+      symbolInfo,
+      resolution,
+      onRealtimeCallback,
+      subscribeUID,
+      onResetCacheNeededCallback,
+      lastBarsCache.get(symbolInfo.full_name)
+    );
+  };
 
-  // static unsubscribeBars = (subscriberUID) => {
-  //   console.log(
-  //     "[unsubscribeBars]: Method call with subscriberUID:",
-  //     subscriberUID
-  //   );
-  //   unsubscribeFromStream(subscriberUID);
-  // };
+  static unsubscribeBars = (subscriberUID) => {
+    console.log(
+      "[unsubscribeBars]: Method call with subscriberUID:",
+      subscriberUID
+    );
+    unsubscribeFromStream(subscriberUID);
+  };
 }
