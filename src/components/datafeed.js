@@ -4,6 +4,10 @@ import { subscribeOnStream, unsubscribeFromStream } from "./streaming.js";
 const lastBarsCache = new Map();
 const exchange = "Binance";
 const configurationData = {
+  // trading_options: true,
+  supports_marks: true,
+  supports_time: true,
+  supports_timescale_marks: true,
   supported_resolutions: ["1D", "1W", "1M"],
   exchanges: [
     {
@@ -27,11 +31,7 @@ async function getAllSymbols() {
   const pairs = data.Data[exchange].pairs;
   for (const leftPairPart of Object.keys(pairs)) {
     const symbols = pairs[leftPairPart].map((rightPairPart) => {
-      const symbol = generateSymbol(
-        exchange,
-        leftPairPart,
-        rightPairPart
-      );
+      const symbol = generateSymbol(exchange, leftPairPart, rightPairPart);
       return {
         symbol: symbol.short,
         full_name: symbol.full,
@@ -46,13 +46,16 @@ async function getAllSymbols() {
 }
 
 export default class Datafeed {
-  static onReady = (callback) => {
-    debugger;
+  constructor(timescaleMarks = [], lineOrders = []) {
+    this.timescaleMarks = timescaleMarks;
+    this.lineOrders = lineOrders;
+  }
+  onReady = (callback) => {
     console.log("[onReady]: Method call");
     setTimeout(() => callback(configurationData));
   };
 
-  static searchSymbols = async (
+  searchSymbols = async (
     userInput,
     exchange,
     symbolType,
@@ -69,7 +72,7 @@ export default class Datafeed {
     onResultReadyCallback(newSymbols);
   };
 
-  static resolveSymbol = async (
+  resolveSymbol = async (
     symbolName,
     onSymbolResolvedCallback,
     onResolveErrorCallback
@@ -94,11 +97,11 @@ export default class Datafeed {
       exchange: symbolItem.exchange,
       minmov: 1,
       pricescale: 100,
-      has_intraday: false,
-      has_no_volume: true,
+      has_intraday: true,
+      has_no_volume: false,
       has_weekly_and_monthly: false,
       supported_resolutions: ["1D", "1W", "1M"],
-      volume_precision: 2,
+      volume_precision: 4,
       data_status: "streaming",
     };
 
@@ -106,7 +109,7 @@ export default class Datafeed {
     onSymbolResolvedCallback(symbolInfo);
   };
 
-  static getBars = async (
+  getBars = async (
     symbolInfo,
     resolution,
     periodParams,
@@ -114,7 +117,7 @@ export default class Datafeed {
     onErrorCallback
   ) => {
     const { from, to, firstDataRequest } = periodParams;
-    console.log("[getBars]: Method call", symbolInfo, resolution, from, to);
+    console.log("[getBars]: Method call");
     const parsedSymbol = parseFullSymbol(symbolInfo.full_name);
     const urlParameters = {
       e: parsedSymbol.exchange,
@@ -168,7 +171,16 @@ export default class Datafeed {
     }
   };
 
-  static subscribeBars = (
+  getTimescaleMarks(symbolInfo, from, to, onDataCallback, resolution) {
+    let timescaleMarks = []
+    if (this.timescaleMarks.length > 0) {
+      timescaleMarks = this.timescaleMarks;
+      onDataCallback(timescaleMarks);
+    }
+    
+  }
+
+  subscribeBars = (
     symbolInfo,
     resolution,
     onRealtimeCallback,
@@ -189,7 +201,7 @@ export default class Datafeed {
     );
   };
 
-  static unsubscribeBars = (subscriberUID) => {
+  unsubscribeBars = (subscriberUID) => {
     console.log(
       "[unsubscribeBars]: Method call with subscriberUID:",
       subscriberUID
