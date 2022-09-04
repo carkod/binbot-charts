@@ -57,7 +57,6 @@ export default class TVChartContainer extends PureComponent {
         .setLineStyle(0)
         .setLineLength(25)
         .setLineColor(element.color)
-        .setBodyBackgroundColor(element.color)
         .setBodyBorderColor(element.color)
         .setBodyTextColor(element.color)
         .setPrice(element.price)
@@ -75,6 +74,6 @@ export default class TVChartContainer extends PureComponent {
   }
 
   render() {
-    return <div ref={this.ref} style={{ height: "calc(100vh - 80px)" }} />;
+    return <div ref={this.ref} style={{ height: "calc(100vh)" }} />;
   }
 }
