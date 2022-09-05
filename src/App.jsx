@@ -4,17 +4,17 @@ import TVChartContainer from "./components/TVChartContainer";
 
 const testTimeMarks = [{
   id: "tsm4",
-  time: 1652572800,
+  time: 1662301800,
   color: "red",
-  label: "B",
+  label: "B", 
   tooltip: ["Safety Order 4"],
 }]
 
 const testOrderLines = [{
-  text: "Take profit order: 10",
+  text: "Take profit 10%",
   tooltip: ["Additional position information"],
   quantity: "200 USDT",
-  price: 5.5,
+  price: 4.85,
   color: "green",
 }]
 class App extends Component {
@@ -24,9 +24,10 @@ class App extends Component {
         <h1 style={{textAlign: "center"}}>Test chart</h1>
         <TVChartContainer
           symbol="Binance:APE/USDT"
-          interval="1H"
+          interval="1D"
           timescaleMarks={testTimeMarks}
           orderLines={testOrderLines}
+          apiKey={"008b268768709f1e8c3ffbd98aea37e61b6e0c540cec971b5948bed7ea564893"}
         />
       </>
     );

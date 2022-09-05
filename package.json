@@ -1,5 +1,5 @@
 {
-  "version": "0.1.1",
+  "version": "0.1.2",
   "name": "binbot-charts",
   "dependencies": {
     "@babel/cli": "^7.18.10",
@@ -8,8 +8,8 @@
     "@babel/preset-env": "^7.18.10",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
-    "react-scripts": "5.0.1",
-    "socket.io-client": "^4.5.2",
+    "react-scripts": "^5.0.1",
+    "socket.io": "1.7.2",
     "use-immer": "^0.7.0"
   },
   "scripts": {

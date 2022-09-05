@@ -1,58 +1,39 @@
-import { makeApiRequest, generateSymbol, parseFullSymbol } from "./helpers.js";
+import { makeApiRequest, parseFullSymbol, getAllSymbols } from "./helpers.js";
 import { subscribeOnStream, unsubscribeFromStream } from "./streaming.js";
 
-const lastBarsCache = new Map();
 const exchange = "Binance";
-const configurationData = {
-  // trading_options: true,
-  supports_marks: true,
-  supports_time: true,
-  supports_timescale_marks: true,
-  supported_resolutions: ["1D", "1W", "1M"],
-  exchanges: [
-    {
-      value: "Binance",
-      name: "Binance",
-      desc: "Binance",
-    },
-  ],
-  symbols_types: [
-    {
-      name: "crypto",
-      value: "crypto",
-    },
-  ],
+const lastBarsCache = new Map();
+const getConfigurationData = async () => {
+  return {
+    supports_marks: true,
+    supports_time: true,
+    supports_timescale_marks: true,
+    selected_resolution: "m",
+    exchanges: [
+      {
+        value: "Binance",
+        name: "Binance",
+        desc: "Binance",
+      },
+    ],
+    symbols_types: [
+      {
+        name: "crypto",
+        value: "crypto",
+      },
+    ],
+  };
 };
 
-async function getAllSymbols() {
-  const data = await makeApiRequest("data/v3/all/exchanges");
-  let allSymbols = [];
-
-  const pairs = data.Data[exchange].pairs;
-  for (const leftPairPart of Object.keys(pairs)) {
-    const symbols = pairs[leftPairPart].map((rightPairPart) => {
-      const symbol = generateSymbol(exchange, leftPairPart, rightPairPart);
-      return {
-        symbol: symbol.short,
-        full_name: symbol.full,
-        description: symbol.short,
-        exchange: exchange,
-        type: "crypto",
-      };
-    });
-    allSymbols = [...allSymbols, ...symbols];
-  }
-  return allSymbols;
-}
-
 export default class Datafeed {
-  constructor(timescaleMarks = [], lineOrders = []) {
+  constructor(apiKey, timescaleMarks = [], lineOrders = []) {
     this.timescaleMarks = timescaleMarks;
     this.lineOrders = lineOrders;
+    this.apiKey = apiKey;
   }
-  onReady = (callback) => {
-    console.log("[onReady]: Method call");
-    setTimeout(() => callback(configurationData));
+  onReady = async (callback) => {
+    this.configurationData = await getConfigurationData(this.apiKey);
+    callback(this.configurationData);
   };
 
   searchSymbols = async (
@@ -62,7 +43,7 @@ export default class Datafeed {
     onResultReadyCallback
   ) => {
     console.log("[searchSymbols]: Method call");
-    const symbols = await getAllSymbols();
+    const symbols = await getAllSymbols(exchange);
     const newSymbols = symbols.filter((symbol) => {
       const isExchangeValid = exchange === "" || symbol.exchange === exchange;
       const isFullSymbolContainsInput =
@@ -77,13 +58,11 @@ export default class Datafeed {
     onSymbolResolvedCallback,
     onResolveErrorCallback
   ) => {
-    console.log("[resolveSymbol]: Method call", symbolName);
-    const symbols = await getAllSymbols();
+    const symbols = await getAllSymbols(exchange);
     const symbolItem = symbols.find(
       ({ full_name }) => full_name === symbolName
     );
     if (!symbolItem) {
-      console.log("[resolveSymbol]: Cannot resolve symbol", symbolName);
       onResolveErrorCallback("cannot resolve symbol");
       return;
     }
@@ -100,12 +79,10 @@ export default class Datafeed {
       has_intraday: true,
       has_no_volume: false,
       has_weekly_and_monthly: false,
-      supported_resolutions: ["1D", "1W", "1M"],
       volume_precision: 4,
       data_status: "streaming",
     };
 
-    console.log("[resolveSymbol]: Symbol resolved", symbolName);
     onSymbolResolvedCallback(symbolInfo);
   };
 
@@ -172,40 +149,40 @@ export default class Datafeed {
   };
 
   getTimescaleMarks(symbolInfo, from, to, onDataCallback, resolution) {
-    let timescaleMarks = []
     if (this.timescaleMarks.length > 0) {
-      timescaleMarks = this.timescaleMarks;
+      let timescaleMarks = [];
+      this.timescaleMarks.forEach((mark) => {
+        let time = new Date(mark.time * 1000);
+        time.setHours(1, 0, 0, 0);
+        const roundFloor = time.getTime() / 1000;
+        mark.time = roundFloor;
+        timescaleMarks.push(mark);
+      });
       onDataCallback(timescaleMarks);
     }
-    
   }
 
   subscribeBars = (
-    symbolInfo,
-    resolution,
-    onRealtimeCallback,
-    subscribeUID,
-    onResetCacheNeededCallback
-  ) => {
-    console.log(
-      "[subscribeBars]: Method call with subscribeUID:",
-      subscribeUID
-    );
-    subscribeOnStream(
-      symbolInfo,
-      resolution,
-      onRealtimeCallback,
-      subscribeUID,
-      onResetCacheNeededCallback,
-      lastBarsCache.get(symbolInfo.full_name)
-    );
-  };
+		symbolInfo,
+		resolution,
+		onRealtimeCallback,
+		subscribeUID,
+		onResetCacheNeededCallback,
+	) => {
+		console.log('[subscribeBars]: Method call with subscribeUID:', subscribeUID);
+		subscribeOnStream(
+			symbolInfo,
+			resolution,
+			onRealtimeCallback,
+			subscribeUID,
+			onResetCacheNeededCallback,
+			lastBarsCache.get(symbolInfo.full_name),
+		);
+	}
+
 
   unsubscribeBars = (subscriberUID) => {
-    console.log(
-      "[unsubscribeBars]: Method call with subscriberUID:",
-      subscriberUID
-    );
-    unsubscribeFromStream(subscriberUID);
-  };
+		console.log('[unsubscribeBars]: Method call with subscriberUID:', subscriberUID);
+		unsubscribeFromStream(subscriberUID);
+	}
 }

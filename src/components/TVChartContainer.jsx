@@ -3,18 +3,20 @@ import { widget } from "../charting_library";
 import Datafeed from "./datafeed";
 
 export default function TVChartContainer ({
-  symbol= "AAPL",
-  interval= "D",
+  apiKey,
+  symbol= "Binance:APE/USDT",
+  interval= "1D",
   libraryPath= "/charting_library/",
   timescaleMarks=[],
   orderLines=[],
+  height="calc(100vh - 80px)"
 }) {
   const containerRef = useRef(null);
 
   useEffect(() => {
     const widgetOptions = {
       symbol: symbol,
-      datafeed: new Datafeed(timescaleMarks),
+      datafeed: new Datafeed(apiKey, timescaleMarks),
       interval: interval,
       container: containerRef.current,
       library_path: libraryPath,
@@ -51,5 +53,5 @@ export default function TVChartContainer ({
     }
   }, [])
 
-  return <div ref={containerRef} style={{ height: "calc(100vh)" }} />;
+  return <div ref={containerRef} style={{ height: height }} />;
 }
