@@ -16,5 +16,5 @@
     "@babel/preset-react",
     "@babel/preset-typescript"
   ],
-  "ignore": ["src/lib/charting_library", "node_modules"]
+  "ignore": ["src/lib/charting_library", "node_modules", "docs"]
 }
