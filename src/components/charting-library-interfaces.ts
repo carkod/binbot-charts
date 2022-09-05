@@ -1,7 +1,7 @@
 import Datafeed from "./datafeed"
 
 export interface IWidgetOptions {
-    symbol: string,
+    symbol: String,
     // BEWARE: no trailing slash is expected in feed URL
     datafeed: Datafeed,
     interval: String,
@@ -17,4 +17,20 @@ export interface IWidgetOptions {
     fullscreen: Boolean,
     autosize: Boolean,
     studies_overrides: Object,
+}
+
+export interface IOrderLine {
+    text: String,
+    tooltip: Array<String>,
+    quantity: String,
+    price: Number,
+    color: String,
+}
+
+export interface ITimescaleMarks {
+    id: String,
+    time: Number,
+    color: String,
+    label: String,
+    tooltip: Array<String>,
 }
