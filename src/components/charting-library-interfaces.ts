@@ -1,36 +1,36 @@
 import Datafeed from "./datafeed"
 
 export interface IWidgetOptions {
-    symbol: String,
+    symbol: string,
     // BEWARE: no trailing slash is expected in feed URL
     datafeed: Datafeed,
-    interval: String,
+    interval: string,
     container: HTMLInputElement,
-    library_path: String, // node_modules path of charting_library
-    locale: String,
-    disabled_features: Array<String>,
-    enabled_features: Array<String>,
-    charts_storage_url: String,
-    charts_storage_api_version: String,
-    client_id: String,
-    user_id: String,
-    fullscreen: Boolean,
-    autosize: Boolean,
-    studies_overrides: Object,
+    library_path: string, // node_modules path of charting_library
+    locale?: string,
+    disabled_features?: Array<string>,
+    enabled_features?: Array<string>,
+    charts_storage_url?: string,
+    charts_storage_api_version?: string,
+    client_id?: string,
+    user_id?: string,
+    fullscreen?: boolean,
+    autosize?: boolean,
+    studies_overrides?: object,
 }
 
 export interface IOrderLine {
-    text: String,
-    tooltip: Array<String>,
-    quantity: String,
+    text: string,
+    tooltip?: Array<string>,
+    quantity?: string,
     price: Number,
-    color: String,
+    color?: string,
 }
 
 export interface ITimescaleMarks {
-    id: String,
+    id: string,
     time: Number,
-    color: String,
-    label: String,
-    tooltip: Array<String>,
+    color?: string,
+    label: string,
+    tooltip?: Array<string>,
 }
