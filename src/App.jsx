@@ -23,11 +23,10 @@ class App extends Component {
       <>
         <h1 style={{textAlign: "center"}}>Test chart</h1>
         <TVChartContainer
-          symbol="Binance:APE/USDT"
-          interval="1D"
+          symbol="APEUSDT"
+          interval="1h"
           timescaleMarks={testTimeMarks}
           orderLines={testOrderLines}
-          apiKey={"008b268768709f1e8c3ffbd98aea37e61b6e0c540cec971b5948bed7ea564893"}
         />
       </>
     );

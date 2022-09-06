@@ -1,10 +1,10 @@
 // Make requests to CryptoCompare API
 export async function makeApiRequest(path) {
   try {
-    const response = await fetch(`https://min-api.cryptocompare.com/${path}`);
+    const response = await fetch(`https://api.binance.com/${path}`);
     return response.json();
   } catch (error) {
-    throw new Error(`CryptoCompare request error: ${error.status}`);
+    throw new Error(`Binance request error: ${error.status}`);
   }
 }
 
@@ -48,4 +48,10 @@ export async function getAllSymbols(exchange) {
     allSymbols = [...allSymbols, ...symbols];
   }
   return allSymbols;
+}
+
+export default function getNextDailyBarTime(barTime) {
+  const date = new Date(barTime * 1000);
+  date.setDate(date.getDate() + 1);
+  return date.getTime() / 1000;
 }

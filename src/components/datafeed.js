@@ -1,14 +1,29 @@
-import { makeApiRequest, parseFullSymbol, getAllSymbols } from "./helpers.js";
+import { makeApiRequest } from "./helpers.js";
 import { subscribeOnStream, unsubscribeFromStream } from "./streaming.js";
 
-const exchange = "Binance";
-const lastBarsCache = new Map();
 const getConfigurationData = async () => {
   return {
     supports_marks: true,
     supports_time: true,
     supports_timescale_marks: true,
-    selected_resolution: "m",
+    supported_resolutions: [
+      "1s",
+      "1m",
+      "3m",
+      "5m",
+      "15m",
+      "30m",
+      "1h",
+      "2h",
+      "4h",
+      "6h",
+      "8h",
+      "12h",
+      "1d",
+      "3d",
+      "1w",
+      "1M",
+    ],
     exchanges: [
       {
         value: "Binance",
@@ -26,13 +41,14 @@ const getConfigurationData = async () => {
 };
 
 export default class Datafeed {
-  constructor(apiKey, timescaleMarks = [], lineOrders = []) {
+  constructor(timescaleMarks = [], lineOrders = [], interval="1h") {
     this.timescaleMarks = timescaleMarks;
     this.lineOrders = lineOrders;
-    this.apiKey = apiKey;
+    this.streaming = null
+    this.interval = interval
   }
   onReady = async (callback) => {
-    this.configurationData = await getConfigurationData(this.apiKey);
+    this.configurationData = await getConfigurationData();
     callback(this.configurationData);
   };
 
@@ -43,13 +59,16 @@ export default class Datafeed {
     onResultReadyCallback
   ) => {
     console.log("[searchSymbols]: Method call");
-    const symbols = await getAllSymbols(exchange);
-    const newSymbols = symbols.filter((symbol) => {
-      const isExchangeValid = exchange === "" || symbol.exchange === exchange;
-      const isFullSymbolContainsInput =
-        symbol.full_name.toLowerCase().indexOf(userInput.toLowerCase()) !== -1;
-      return isExchangeValid && isFullSymbolContainsInput;
-    });
+    // const symbols = await getAllSymbols(exchange);
+    // const newSymbols = symbols.filter((symbol) => {
+    //   const isExchangeValid = exchange === "" || symbol.exchange === exchange;
+    //   if (symbol.replace("/", "") === userInput) {
+
+    //   }
+    //   const isFullSymbolContainsInput =
+    //     symbol.full_name.toLowerCase().indexOf(userInput.toLowerCase()) !== -1;
+    //   return isExchangeValid && isFullSymbolContainsInput;
+    // });
     onResultReadyCallback(newSymbols);
   };
 
@@ -58,29 +77,32 @@ export default class Datafeed {
     onSymbolResolvedCallback,
     onResolveErrorCallback
   ) => {
-    const symbols = await getAllSymbols(exchange);
-    const symbolItem = symbols.find(
-      ({ full_name }) => full_name === symbolName
-    );
-    if (!symbolItem) {
-      onResolveErrorCallback("cannot resolve symbol");
-      return;
-    }
+    // const symbols = await getAllSymbols(exchange);
+    // const symbolItem = symbols.find(
+    //   ({ full_name }) => full_name === symbolName
+    // );
+    // if (!symbolItem) {
+    //   onResolveErrorCallback("cannot resolve symbol");
+    //   return;
+    // }
     const symbolInfo = {
-      ticker: symbolItem.full_name,
-      name: symbolItem.symbol,
-      description: symbolItem.description,
-      type: symbolItem.type,
+      ticker: symbolName,
+      name: symbolName,
+      ticker: symbolName,
+      description: symbolName,
+      type: "crypto",
       session: "24x7",
       timezone: "Etc/UTC",
-      exchange: symbolItem.exchange,
-      minmov: 1,
-      pricescale: 100,
+      exchange: "Binance",
+      minmov: 100,
+      pricescale: 100000,
       has_intraday: true,
       has_no_volume: false,
-      has_weekly_and_monthly: false,
-      volume_precision: 4,
+      volume: "hundreds",
+      has_weekly_and_monthly: true,
+      volume_precision: 9,
       data_status: "streaming",
+      resolution: "1h"
     };
 
     onSymbolResolvedCallback(symbolInfo);
@@ -95,23 +117,20 @@ export default class Datafeed {
   ) => {
     const { from, to, firstDataRequest } = periodParams;
     console.log("[getBars]: Method call");
-    const parsedSymbol = parseFullSymbol(symbolInfo.full_name);
-    const urlParameters = {
-      e: parsedSymbol.exchange,
-      fsym: parsedSymbol.fromSymbol,
-      tsym: parsedSymbol.toSymbol,
-      toTs: to,
-      limit: 2000,
+    let urlParameters = {
+      symbol: symbolInfo.name,
+      interval: this.interval,
+      startTime: (from * 1000),
+      endTime: (to * 1000),
+      limit: 600
     };
+
     const query = Object.keys(urlParameters)
       .map((name) => `${name}=${encodeURIComponent(urlParameters[name])}`)
       .join("&");
     try {
-      const data = await makeApiRequest(`data/histoday?${query}`);
-      if (
-        (data.Response && data.Response === "Error") ||
-        data.Data.length === 0
-      ) {
+      const data = await makeApiRequest(`api/v3/uiKlines?${query}`);
+      if ((data.Response && data.Response === "Error") || data.length === 0) {
         // "noData" should be set if there is no data in the requested period.
         onHistoryCallback([], {
           noData: true,
@@ -119,25 +138,21 @@ export default class Datafeed {
         return;
       }
       let bars = [];
-      data.Data.forEach((bar) => {
-        if (bar.time >= from && bar.time < to) {
+      data.forEach((bar) => {
+        if (bar[0] >= (from * 1000) && bar[0] < (to * 1000)) {
           bars = [
             ...bars,
             {
-              time: bar.time * 1000,
-              low: bar.low,
-              high: bar.high,
-              open: bar.open,
-              close: bar.close,
+              time: bar[0],
+              low: bar[3],
+              high: bar[2],
+              open: bar[1],
+              close: bar[4],
+              volume: bar[5]
             },
           ];
         }
       });
-      if (firstDataRequest) {
-        lastBarsCache.set(symbolInfo.full_name, {
-          ...bars[bars.length - 1],
-        });
-      }
       console.log(`[getBars]: returned ${bars.length} bar(s)`);
       onHistoryCallback(bars, {
         noData: false,
@@ -163,26 +178,28 @@ export default class Datafeed {
   }
 
   subscribeBars = (
-		symbolInfo,
-		resolution,
-		onRealtimeCallback,
-		subscribeUID,
-		onResetCacheNeededCallback,
-	) => {
-		console.log('[subscribeBars]: Method call with subscribeUID:', subscribeUID);
-		subscribeOnStream(
-			symbolInfo,
-			resolution,
-			onRealtimeCallback,
-			subscribeUID,
-			onResetCacheNeededCallback,
-			lastBarsCache.get(symbolInfo.full_name),
-		);
-	}
-
+    symbolInfo,
+    resolution,
+    onRealtimeCallback,
+    subscribeUID,
+    onResetCacheNeededCallback
+  ) => {
+    console.log('[subscribeBars]: Method call with subscribeUID:', subscribeUID);
+    subscribeOnStream(
+    	symbolInfo,
+    	resolution,
+    	onRealtimeCallback,
+    	subscribeUID,
+    	onResetCacheNeededCallback,
+      this.interval
+    );
+  };
 
   unsubscribeBars = (subscriberUID) => {
-		console.log('[unsubscribeBars]: Method call with subscriberUID:', subscriberUID);
-		unsubscribeFromStream(subscriberUID);
-	}
+    console.log(
+      "[unsubscribeBars]: Method call with subscriberUID:",
+      subscriberUID
+    );
+    unsubscribeFromStream(subscriberUID);
+  };
 }
