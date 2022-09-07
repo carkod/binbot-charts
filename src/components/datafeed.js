@@ -1,4 +1,4 @@
-import { makeApiRequest } from "./helpers.js";
+import { getAllSymbols, makeApiRequest } from "./helpers.js";
 import { subscribeOnStream, unsubscribeFromStream } from "./streaming.js";
 
 const getConfigurationData = async () => {
@@ -41,11 +41,11 @@ const getConfigurationData = async () => {
 };
 
 export default class Datafeed {
-  constructor(timescaleMarks = [], lineOrders = [], interval="1h") {
+  constructor(timescaleMarks = [], lineOrders = [], interval = "1h") {
     this.timescaleMarks = timescaleMarks;
     this.lineOrders = lineOrders;
-    this.streaming = null
-    this.interval = interval
+    this.streaming = null;
+    this.interval = interval;
   }
   onReady = async (callback) => {
     this.configurationData = await getConfigurationData();
@@ -58,18 +58,8 @@ export default class Datafeed {
     symbolType,
     onResultReadyCallback
   ) => {
-    console.log("[searchSymbols]: Method call");
-    // const symbols = await getAllSymbols(exchange);
-    // const newSymbols = symbols.filter((symbol) => {
-    //   const isExchangeValid = exchange === "" || symbol.exchange === exchange;
-    //   if (symbol.replace("/", "") === userInput) {
-
-    //   }
-    //   const isFullSymbolContainsInput =
-    //     symbol.full_name.toLowerCase().indexOf(userInput.toLowerCase()) !== -1;
-    //   return isExchangeValid && isFullSymbolContainsInput;
-    // });
-    onResultReadyCallback(newSymbols);
+    const symbols = await getAllSymbols(userInput);
+    onResultReadyCallback(symbols);
   };
 
   resolveSymbol = async (
@@ -77,14 +67,12 @@ export default class Datafeed {
     onSymbolResolvedCallback,
     onResolveErrorCallback
   ) => {
-    // const symbols = await getAllSymbols(exchange);
-    // const symbolItem = symbols.find(
-    //   ({ full_name }) => full_name === symbolName
-    // );
-    // if (!symbolItem) {
-    //   onResolveErrorCallback("cannot resolve symbol");
-    //   return;
-    // }
+
+    if (!symbolName) {
+      onResolveErrorCallback("cannot resolve symbol");
+      return;
+    }
+
     const symbolInfo = {
       ticker: symbolName,
       name: symbolName,
@@ -102,7 +90,7 @@ export default class Datafeed {
       has_weekly_and_monthly: true,
       volume_precision: 9,
       data_status: "streaming",
-      resolution: "1h"
+      resolution: "1h",
     };
 
     onSymbolResolvedCallback(symbolInfo);
@@ -120,9 +108,9 @@ export default class Datafeed {
     let urlParameters = {
       symbol: symbolInfo.name,
       interval: this.interval,
-      startTime: (from * 1000),
-      endTime: (to * 1000),
-      limit: 600
+      startTime: from * 1000,
+      endTime: to * 1000,
+      limit: 600,
     };
 
     const query = Object.keys(urlParameters)
@@ -139,7 +127,7 @@ export default class Datafeed {
       }
       let bars = [];
       data.forEach((bar) => {
-        if (bar[0] >= (from * 1000) && bar[0] < (to * 1000)) {
+        if (bar[0] >= from * 1000 && bar[0] < to * 1000) {
           bars = [
             ...bars,
             {
@@ -148,12 +136,11 @@ export default class Datafeed {
               high: bar[2],
               open: bar[1],
               close: bar[4],
-              volume: bar[5]
+              volume: bar[5],
             },
           ];
         }
       });
-      console.log(`[getBars]: returned ${bars.length} bar(s)`);
       onHistoryCallback(bars, {
         noData: false,
       });
@@ -184,22 +171,17 @@ export default class Datafeed {
     subscribeUID,
     onResetCacheNeededCallback
   ) => {
-    console.log('[subscribeBars]: Method call with subscribeUID:', subscribeUID);
     subscribeOnStream(
-    	symbolInfo,
-    	resolution,
-    	onRealtimeCallback,
-    	subscribeUID,
-    	onResetCacheNeededCallback,
+      symbolInfo,
+      resolution,
+      onRealtimeCallback,
+      subscribeUID,
+      onResetCacheNeededCallback,
       this.interval
     );
   };
 
   unsubscribeBars = (subscriberUID) => {
-    console.log(
-      "[unsubscribeBars]: Method call with subscriberUID:",
-      subscriberUID
-    );
     unsubscribeFromStream(subscriberUID);
   };
 }

@@ -24,10 +24,10 @@ export default function TVChartContainer({
       fullscreen: false,
       autosize: true,
       studies_overrides: {},
+      symbol_search_request_delay: 1000,
       overrides: {
         volumePaneSize: "small",
         "mainSeriesProperties.barStyle.dontDrawOpen": false
-
       }
     };
     const tvWidget = new widget(widgetOptions);
