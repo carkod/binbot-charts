@@ -4,17 +4,18 @@ import Datafeed from "./datafeed";
 import PropTypes from "prop-types";
 
 export default function TVChartContainer({
-  ohlcTick,
   symbol = "APEUSDT",
   interval = "1h",
   libraryPath = "/charting_library/",
   timescaleMarks = [],
   orderLines = [],
   height = "calc(100vh - 80px)",
+  onTick,
+  getLatestBar
 }) {
   const containerRef = useRef(null);
 
-  useEffect(() => {
+  useEffect(async () => {
     const widgetOptions = {
       symbol: symbol,
       datafeed: new Datafeed(timescaleMarks),
@@ -36,24 +37,37 @@ export default function TVChartContainer({
     tvWidget.onChartReady(() => {
       if (orderLines.length > 0) {
         orderLines.forEach((order) => {
+          const lineStyle = order.lineStyle || 0
           tvWidget
             .chart()
             .createPositionLine()
             .setText(order.text)
             .setTooltip(order.tooltip)
             .setQuantity(order.quantity)
+            .setQuantityFont("bold 12pt Verdana")
             .setQuantityBackgroundColor(order.color)
             .setQuantityBorderColor(order.color)
-            .setLineStyle(0)
+            .setLineStyle(lineStyle)
             .setLineLength(25)
             .setLineColor(order.color)
+            .setBodyFont("bold 12pt Verdana")
             .setBodyBorderColor(order.color)
             .setBodyTextColor(order.color)
             .setPrice(order.price);
         });
+
+
+        tvWidget.subscribe("onTick", (event) => onTick(event))
+
+        // get latest bar for last price
+        const prices = async () => {
+          const data = await tvWidget.activeChart().exportData({ includeTime: false, includeSeries: true, includedStudies: [] })
+          getLatestBar(data.data[data.data.length - 1])
+        };
+        prices()
       }
 
-      tvWidget.subscribe("onTick", (event) => ohlcTick(event))
+
     });
 
 
@@ -77,5 +91,6 @@ TVChartContainer.propTypes = {
   timescaleMarks: PropTypes.array,
   orderLines: PropTypes.array,
   height: PropTypes.string,
-  ohlcTick: PropTypes.func.isRequired
+  onTick: PropTypes.func,
+  getLatestBar: PropTypes.func,
 };

@@ -22,6 +22,9 @@ export default function App() {
   const handleTick = (ohlc) => {
     console.log("Kline ticked: ", ohlc)
   }
+  const getLatestBar = (bar) => {
+    console.log("Kline latest price: ", bar[0])
+  }
   return (
     <>
       <h1 style={{textAlign: "center"}}>Test chart</h1>
@@ -30,7 +33,8 @@ export default function App() {
         interval="1h"
         timescaleMarks={testTimeMarks}
         orderLines={testOrderLines}
-        ohlcTick={handleTick}
+        onTick={handleTick}
+        getLatestBar={getLatestBar}
       />
     </>
   );
