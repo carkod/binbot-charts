@@ -1,10 +1,10 @@
 // Make requests to CryptoCompare API
 export async function makeApiRequest(path) {
   try {
-    const response = await fetch(`https://min-api.cryptocompare.com/${path}`);
+    const response = await fetch(`https://api.binance.com/${path}`);
     return response.json();
   } catch (error) {
-    throw new Error(`CryptoCompare request error: ${error.status}`);
+    throw new Error(`Binance request error: ${error.status}`);
   }
 }
 
@@ -30,22 +30,30 @@ export function parseFullSymbol(fullSymbol) {
   };
 }
 
-export async function getAllSymbols(exchange) {
-  const data = await makeApiRequest("data/v3/all/exchanges");
-  let allSymbols = [];
-  const pairs = data.Data[exchange].pairs;
-  for (const leftPairPart of Object.keys(pairs)) {
-    const symbols = pairs[leftPairPart].map((rightPairPart) => {
-      const symbol = generateSymbol(exchange, leftPairPart, rightPairPart);
-      return {
-        symbol: symbol.short,
-        full_name: symbol.full,
-        description: symbol.short,
-        exchange: exchange,
-        type: "crypto",
-      };
+export async function getAllSymbols(symbol) {
+  let newSymbols = [];
+  try {
+    const data = await makeApiRequest(`api/v3/exchangeInfo?symbol=${symbol.toUpperCase()}`);
+    data.symbols.forEach(item => {
+      if (item.status === "TRADING") {
+        newSymbols.push({
+          symbol: item.symbol,
+          full_name: `${item.baseAsset}/${item.quoteAsset}`,
+          description: `Precision: ${item.quoteAssetPrecision}`,
+          exchange: "Binance",
+          ticker: item.symbol,
+          type: "crypto",
+        });
+      }
     });
-    allSymbols = [...allSymbols, ...symbols];
+  } catch (e) {
+    return newSymbols
   }
-  return allSymbols;
+  return newSymbols;
+}
+
+export default function getNextDailyBarTime(barTime) {
+  const date = new Date(barTime * 1000);
+  date.setDate(date.getDate() + 1);
+  return date.getTime() / 1000;
 }
