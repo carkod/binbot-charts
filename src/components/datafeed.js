@@ -62,7 +62,7 @@ export default class Datafeed {
     onResultReadyCallback(symbols);
   };
 
-  resolveSymbol = async (
+  resolveSymbol = (
     symbolName,
     onSymbolResolvedCallback,
     onResolveErrorCallback

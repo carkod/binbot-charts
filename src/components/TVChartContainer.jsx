@@ -11,7 +11,7 @@ export default function TVChartContainer({
   orderLines = [],
   height = "calc(100vh - 80px)",
   onTick,
-  getLatestBar
+  getLatestBar,
 }) {
   const containerRef = useRef(null);
 
@@ -29,15 +29,15 @@ export default function TVChartContainer({
       symbol_search_request_delay: 1000,
       overrides: {
         volumePaneSize: "small",
-        "mainSeriesProperties.barStyle.dontDrawOpen": false
-      }
+        "mainSeriesProperties.barStyle.dontDrawOpen": false,
+      },
     };
     const tvWidget = new widget(widgetOptions);
 
     tvWidget.onChartReady(() => {
       if (orderLines.length > 0) {
         orderLines.forEach((order) => {
-          const lineStyle = order.lineStyle || 0
+          const lineStyle = order.lineStyle || 0;
           tvWidget
             .chart()
             .createPositionLine()
@@ -55,21 +55,23 @@ export default function TVChartContainer({
             .setBodyTextColor(order.color)
             .setPrice(order.price);
         });
-
-
-        tvWidget.subscribe("onTick", (event) => onTick(event))
-
-        // get latest bar for last price
-        const prices = async () => {
-          const data = await tvWidget.activeChart().exportData({ includeTime: false, includeSeries: true, includedStudies: [] })
-          getLatestBar(data.data[data.data.length - 1])
-        };
-        prices()
       }
 
+      tvWidget.subscribe("onTick", (event) => onTick(event));
 
+      // get latest bar for last price
+      const prices = async () => {
+        const data = await tvWidget
+          .activeChart()
+          .exportData({
+            includeTime: false,
+            includeSeries: true,
+            includedStudies: [],
+          });
+        getLatestBar(data.data[data.data.length - 1]);
+      };
+      prices();
     });
-
 
     // returned function will be called on component unmount
     return () => {
