@@ -74,10 +74,7 @@ export default function TVChartContainer({
           .setTooltip(order.tooltip)
           .setQuantity(order.quantity)
           .setPrice(order.price);
-        } else {
-          item.remove()
         }
-        
       });
     } else {
       const lineStyle = order.lineStyle || 0;
