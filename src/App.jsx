@@ -17,20 +17,22 @@ const testOrderLines = [{
   price: 4.85,
   color: "green",
 }]
-class App extends Component {
-  render() {
-    return (
-      <>
-        <h1 style={{textAlign: "center"}}>Test chart</h1>
-        <TVChartContainer
-          symbol="APEUSDT"
-          interval="1h"
-          timescaleMarks={testTimeMarks}
-          orderLines={testOrderLines}
-        />
-      </>
-    );
+
+export default function App() {
+  const handleTick = (ohlc) => {
+    console.log("Kline ticked: ", ohlc)
   }
+  return (
+    <>
+      <h1 style={{textAlign: "center"}}>Test chart</h1>
+      <TVChartContainer
+        symbol="APEUSDT"
+        interval="1h"
+        timescaleMarks={testTimeMarks}
+        orderLines={testOrderLines}
+        ohlcTick={handleTick}
+      />
+    </>
+  );
 }
 
-export default App;

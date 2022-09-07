@@ -4,6 +4,7 @@ import Datafeed from "./datafeed";
 import PropTypes from "prop-types";
 
 export default function TVChartContainer({
+  ohlcTick,
   symbol = "APEUSDT",
   interval = "1h",
   libraryPath = "/charting_library/",
@@ -51,7 +52,10 @@ export default function TVChartContainer({
             .setPrice(order.price);
         });
       }
+
+      tvWidget.subscribe("onTick", (event) => ohlcTick(event))
     });
+
 
     // returned function will be called on component unmount
     return () => {
@@ -73,4 +77,5 @@ TVChartContainer.propTypes = {
   timescaleMarks: PropTypes.array,
   orderLines: PropTypes.array,
   height: PropTypes.string,
+  ohlcTick: PropTypes.func.isRequired
 };
