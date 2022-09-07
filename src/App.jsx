@@ -20,10 +20,10 @@ const testOrderLines = [{
 
 export default function App() {
   const handleTick = (ohlc) => {
-    console.log("Kline ticked: ", ohlc)
+    // console.log("Kline ticked: ", ohlc)
   }
   const getLatestBar = (bar) => {
-    console.log("Kline latest price: ", bar[0])
+    // console.log("Kline latest price: ", bar[0])
   }
   return (
     <>
