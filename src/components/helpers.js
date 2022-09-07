@@ -51,9 +51,3 @@ export async function getAllSymbols(symbol) {
   }
   return newSymbols;
 }
-
-export default function getNextDailyBarTime(barTime) {
-  const date = new Date(barTime * 1000);
-  date.setDate(date.getDate() + 1);
-  return date.getTime() / 1000;
-}
