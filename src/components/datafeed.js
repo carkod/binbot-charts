@@ -104,7 +104,6 @@ export default class Datafeed {
     onErrorCallback
   ) => {
     const { from, to, firstDataRequest } = periodParams;
-    console.log("[getBars]: Method call");
     let urlParameters = {
       symbol: symbolInfo.name,
       interval: this.interval,
