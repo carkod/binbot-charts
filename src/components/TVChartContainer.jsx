@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from "react";
 import { widget } from "../charting_library";
 import Datafeed from "./datafeed";
 import PropTypes from "prop-types";
+import { useImmer } from "use-immer";
 
 export default function TVChartContainer({
   symbol = "APEUSDT",
@@ -15,7 +16,9 @@ export default function TVChartContainer({
 }) {
   const containerRef = useRef(null);
 
-  useEffect(async () => {
+  const [chartOrderLines, setChartOrderLines] = useImmer([]);
+
+  useEffect(() => {
     const widgetOptions = {
       symbol: symbol,
       datafeed: new Datafeed(timescaleMarks),
@@ -37,23 +40,11 @@ export default function TVChartContainer({
     tvWidget.onChartReady(() => {
       if (orderLines.length > 0) {
         orderLines.forEach((order) => {
-          const lineStyle = order.lineStyle || 0;
-          tvWidget
-            .chart()
-            .createPositionLine()
-            .setText(order.text)
-            .setTooltip(order.tooltip)
-            .setQuantity(order.quantity)
-            .setQuantityFont("inherit 14px Arial")
-            .setQuantityBackgroundColor(order.color)
-            .setQuantityBorderColor(order.color)
-            .setLineStyle(lineStyle)
-            .setLineLength(25)
-            .setLineColor(order.color)
-            .setBodyFont("inherit 14px Arial")
-            .setBodyBorderColor(order.color)
-            .setBodyTextColor(order.color)
-            .setPrice(order.price);
+          const orderLine = updateOrderLines(tvWidget, order);
+          setChartOrderLines((draft) => {
+            draft.push(orderLine);
+            return draft;
+          });
         });
       }
 
@@ -61,13 +52,11 @@ export default function TVChartContainer({
 
       // get latest bar for last price
       const prices = async () => {
-        const data = await tvWidget
-          .activeChart()
-          .exportData({
-            includeTime: false,
-            includeSeries: true,
-            includedStudies: [],
-          });
+        const data = await tvWidget.activeChart().exportData({
+          includeTime: false,
+          includeSeries: true,
+          includedStudies: [],
+        });
         getLatestBar(data.data[data.data.length - 1]);
       };
       prices();
@@ -75,14 +64,45 @@ export default function TVChartContainer({
 
     // returned function will be called on component unmount
     return () => {
-      if (this.tvWidget !== null) {
-        this.tvWidget.remove();
-        this.tvWidget = null;
+      if (!tvWidget) {
+        tvWidget.remove();
       }
     };
-  }, []);
+  }, [orderLines, timescaleMarks]);
 
-  return <div ref={containerRef} style={{ height: height }} />;
+  const updateOrderLines = (tvWidget, order) => {
+    if (chartOrderLines && chartOrderLines.length > 0) {
+      chartOrderLines.forEach((item) => {
+        item.remove();
+      });
+    }
+
+    const lineStyle = order.lineStyle || 0;
+    const chartOrderLine = tvWidget
+      .chart()
+      .createOrderLine()
+      .setText(order.text)
+      .setTooltip(order.tooltip)
+      .setQuantity(order.quantity)
+      .setQuantityFont("inherit 14px Arial")
+      .setQuantityBackgroundColor(order.color)
+      .setQuantityBorderColor(order.color)
+      .setLineStyle(lineStyle)
+      .setLineLength(25)
+      .setLineColor(order.color)
+      .setBodyFont("inherit 14px Arial")
+      .setBodyBorderColor(order.color)
+      .setBodyTextColor(order.color)
+      .setPrice(order.price);
+    return chartOrderLine;
+  };
+
+  return (
+    <>
+      {console.log(chartOrderLines)}
+      <div ref={containerRef} style={{ height: height }} />
+    </>
+  );
 }
 
 TVChartContainer.propTypes = {
