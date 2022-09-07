@@ -40,11 +40,7 @@ export default function TVChartContainer({
     tvWidget.onChartReady(() => {
       if (orderLines.length > 0) {
         orderLines.forEach((order) => {
-          const orderLine = updateOrderLines(tvWidget, order);
-          setChartOrderLines((draft) => {
-            draft.push(orderLine);
-            return draft;
-          });
+          updateOrderLines(tvWidget, order);
         });
       }
 
@@ -73,28 +69,40 @@ export default function TVChartContainer({
   const updateOrderLines = (tvWidget, order) => {
     if (chartOrderLines && chartOrderLines.length > 0) {
       chartOrderLines.forEach((item) => {
-        item.remove();
+        if (item._data.bodyText == order.text) {
+          item.setText(order.text)
+          .setTooltip(order.tooltip)
+          .setQuantity(order.quantity)
+          .setPrice(order.price);
+        } else {
+          item.remove()
+        }
+        
       });
-    }
+    } else {
+      const lineStyle = order.lineStyle || 0;
+      const chartOrderLine = tvWidget
+        .chart()
+        .createOrderLine()
+        .setText(order.text)
+        .setTooltip(order.tooltip)
+        .setQuantity(order.quantity)
+        .setQuantityFont("inherit 14px Arial")
+        .setQuantityBackgroundColor(order.color)
+        .setQuantityBorderColor(order.color)
+        .setLineStyle(lineStyle)
+        .setLineLength(25)
+        .setLineColor(order.color)
+        .setBodyFont("inherit 14px Arial")
+        .setBodyBorderColor(order.color)
+        .setBodyTextColor(order.color)
+        .setPrice(order.price);
 
-    const lineStyle = order.lineStyle || 0;
-    const chartOrderLine = tvWidget
-      .chart()
-      .createOrderLine()
-      .setText(order.text)
-      .setTooltip(order.tooltip)
-      .setQuantity(order.quantity)
-      .setQuantityFont("inherit 14px Arial")
-      .setQuantityBackgroundColor(order.color)
-      .setQuantityBorderColor(order.color)
-      .setLineStyle(lineStyle)
-      .setLineLength(25)
-      .setLineColor(order.color)
-      .setBodyFont("inherit 14px Arial")
-      .setBodyBorderColor(order.color)
-      .setBodyTextColor(order.color)
-      .setPrice(order.price);
-    return chartOrderLine;
+        setChartOrderLines((draft) => {
+          draft.push(chartOrderLine);
+          return draft;
+        });
+      }
   };
 
   return (

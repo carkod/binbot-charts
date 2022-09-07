@@ -38,6 +38,18 @@ export default function App() {
           price: currentPrice,
           color: "#1f77d0",
         });
+        return draft
+      });
+      setOrderLines((draft) => {
+        draft.push({
+          type: "take_profit",
+          text: "Take profit",
+          tooltip: ["Inactive"],
+          quantity: `XX USDT`,
+          price: currentPrice * 1.03,
+          color: "#1f77d0",
+        });
+        return draft
       });
     }
   }, [setOrderLines, currentPrice]);
