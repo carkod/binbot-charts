@@ -29,9 +29,15 @@ export default function App() {
 
   useEffect(() => {
     if (currentPrice) {
+      updateOrderLines()
+    }
+    
+  }, [currentPrice]);
+
+  const updateOrderLines = () => {
+    if (currentPrice) {
       setOrderLines((draft) => {
         draft.push({
-          type: "base_order",
           text: "Base",
           tooltip: ["Inactive"],
           quantity: `XX USDT`,
@@ -42,17 +48,17 @@ export default function App() {
       });
       setOrderLines((draft) => {
         draft.push({
-          type: "take_profit",
           text: "Take profit",
           tooltip: ["Inactive"],
           quantity: `XX USDT`,
-          price: currentPrice * 1.03,
+          price: (currentPrice * 1.03).toFixed(6),
           color: "#1f77d0",
         });
         return draft
       });
     }
-  }, [setOrderLines, currentPrice]);
+    
+  }
 
   const handleTick = (ohlc) => {
     setCurrentPrice(ohlc.close);

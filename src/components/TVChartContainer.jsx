@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { widget } from "../charting_library";
 import Datafeed from "./datafeed";
 import PropTypes from "prop-types";
@@ -17,8 +17,32 @@ export default function TVChartContainer({
   const containerRef = useRef(null);
 
   const [chartOrderLines, setChartOrderLines] = useImmer([]);
+  const [widgetState, setWidgetState] = useState(null);
 
   useEffect(() => {
+    if (!widgetState) {
+      initializeChart();
+    }
+    
+
+    if (orderLines && orderLines.length > 0) {
+      updateOrderLines(orderLines);
+    }
+
+    // returned function will be called on component unmount
+    return () => {
+      componentUnMount();
+    };
+  }, [orderLines]);
+
+  const componentUnMount = () => {
+    if (widgetState !== null) {
+      widgetState.remove();
+      setWidgetState(null)
+    }
+  };
+
+  const initializeChart = () => {
     const widgetOptions = {
       symbol: symbol,
       datafeed: new Datafeed(timescaleMarks),
@@ -38,13 +62,9 @@ export default function TVChartContainer({
     const tvWidget = new widget(widgetOptions);
 
     tvWidget.onChartReady(() => {
-      if (orderLines.length > 0) {
-        orderLines.forEach((order) => {
-          updateOrderLines(tvWidget, order);
-        });
-      }
 
       tvWidget.subscribe("onTick", (event) => onTick(event));
+      setWidgetState(tvWidget);
 
       // get latest bar for last price
       const prices = async () => {
@@ -57,54 +77,54 @@ export default function TVChartContainer({
       };
       prices();
     });
+  };
 
-    // returned function will be called on component unmount
-    return () => {
-      if (!tvWidget) {
-        tvWidget.remove();
-      }
-    };
-  }, [orderLines, timescaleMarks]);
-
-  const updateOrderLines = (tvWidget, order) => {
+  const updateOrderLines = (orderLines) => {
     if (chartOrderLines && chartOrderLines.length > 0) {
       chartOrderLines.forEach((item) => {
-        if (item._data.bodyText == order.text) {
-          item.setText(order.text)
-          .setTooltip(order.tooltip)
-          .setQuantity(order.quantity)
-          .setPrice(order.price);
-        }
+        orderLines.forEach(order => {
+          if (item._data.bodyText == order.text) {
+            item
+              .setText(order.text)
+              .setTooltip(order.tooltip)
+              .setQuantity(order.quantity)
+              .setPrice(order.price);
+          }
+        })
+        
       });
     } else {
-      const lineStyle = order.lineStyle || 0;
-      const chartOrderLine = tvWidget
-        .chart()
-        .createOrderLine()
-        .setText(order.text)
-        .setTooltip(order.tooltip)
-        .setQuantity(order.quantity)
-        .setQuantityFont("inherit 14px Arial")
-        .setQuantityBackgroundColor(order.color)
-        .setQuantityBorderColor(order.color)
-        .setLineStyle(lineStyle)
-        .setLineLength(25)
-        .setLineColor(order.color)
-        .setBodyFont("inherit 14px Arial")
-        .setBodyBorderColor(order.color)
-        .setBodyTextColor(order.color)
-        .setPrice(order.price);
+      if (orderLines && orderLines.length > 0) {
+        orderLines.forEach((order) => {
+          // const lineStyle = order.lineStyle || 0;
+          const chartOrderLine = widgetState
+            .chart()
+            .createOrderLine()
+            .setText(order.text)
+            .setTooltip(order.tooltip)
+            .setQuantity(order.quantity)
+            .setQuantityFont("inherit 14px Arial")
+            .setQuantityBackgroundColor(order.color)
+            .setQuantityBorderColor(order.color)
+            // .setLineStyle(lineStyle)
+            .setLineLength(25)
+            .setLineColor(order.color)
+            .setBodyFont("inherit 14px Arial")
+            .setBodyBorderColor(order.color)
+            .setBodyTextColor(order.color)
+            .setPrice(order.price);
 
-        setChartOrderLines((draft) => {
-          draft.push(chartOrderLine);
-          return draft;
+          setChartOrderLines((draft) => {
+            draft.push(chartOrderLine);
+            return draft;
+          });
         });
       }
+    }
   };
 
   return (
     <>
-      {console.log(chartOrderLines)}
       <div ref={containerRef} style={{ height: height }} />
     </>
   );

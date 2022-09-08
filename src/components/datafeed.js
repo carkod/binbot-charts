@@ -62,38 +62,39 @@ export default class Datafeed {
     onResultReadyCallback(symbols);
   };
 
-  resolveSymbol = (
+  resolveSymbol = async (
     symbolName,
     onSymbolResolvedCallback,
     onResolveErrorCallback
   ) => {
-
     if (!symbolName) {
-      onResolveErrorCallback("cannot resolve symbol");
+      await onResolveErrorCallback("cannot resolve symbol");
       return;
     }
 
-    const symbolInfo = {
-      ticker: symbolName,
-      name: symbolName,
-      ticker: symbolName,
-      description: symbolName,
-      type: "crypto",
-      session: "24x7",
-      timezone: "Etc/UTC",
-      exchange: "Binance",
-      minmov: 100,
-      pricescale: 100000,
-      has_intraday: true,
-      has_no_volume: false,
-      volume: "hundreds",
-      has_weekly_and_monthly: true,
-      volume_precision: 9,
-      data_status: "streaming",
-      resolution: "1h",
+    const symbolInfo = () => {
+      return {
+        ticker: symbolName,
+        name: symbolName,
+        ticker: symbolName,
+        description: symbolName,
+        type: "crypto",
+        session: "24x7",
+        timezone: "Etc/UTC",
+        exchange: "Binance",
+        minmov: 100,
+        pricescale: 100000,
+        has_intraday: true,
+        has_no_volume: false,
+        volume: "hundreds",
+        has_weekly_and_monthly: true,
+        volume_precision: 9,
+        data_status: "streaming",
+        resolution: "1h",
+      };
     };
-
-    onSymbolResolvedCallback(symbolInfo);
+    const symbol = await symbolInfo();
+    onSymbolResolvedCallback(symbol);
   };
 
   getBars = async (
