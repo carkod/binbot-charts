@@ -28,19 +28,7 @@ export default function TVChartContainer({
     if (orderLines && orderLines.length > 0) {
       updateOrderLines(orderLines);
     }
-
-    // returned function will be called on component unmount
-    return () => {
-      componentUnMount();
-    };
   }, [orderLines]);
-
-  const componentUnMount = () => {
-    if (widgetState !== null) {
-      widgetState.remove();
-      setWidgetState(null)
-    }
-  };
 
   const initializeChart = () => {
     const widgetOptions = {
