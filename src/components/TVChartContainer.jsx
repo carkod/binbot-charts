@@ -18,16 +18,21 @@ export default function TVChartContainer({
 
   const [chartOrderLines, setChartOrderLines] = useImmer([]);
   const [widgetState, setWidgetState] = useState(null);
+  const [symbolState, setSymbolState] = useState(symbol)
 
   useEffect(() => {
     if (!widgetState) {
       initializeChart();
     }
-    
 
     if (orderLines && orderLines.length > 0) {
       updateOrderLines(orderLines);
     }
+    
+    // if (symbol !== symbolState) {
+    //   widgetState.setSymbol(symbol, interval);
+    // }
+
   }, [orderLines]);
 
   const initializeChart = () => {
@@ -84,7 +89,7 @@ export default function TVChartContainer({
     } else {
       if (orderLines && orderLines.length > 0) {
         orderLines.forEach((order) => {
-          // const lineStyle = order.lineStyle || 0;
+          const lineStyle = order.lineStyle || 0;
           const chartOrderLine = widgetState
             .chart()
             .createOrderLine()
@@ -94,7 +99,7 @@ export default function TVChartContainer({
             .setQuantityFont("inherit 14px Arial")
             .setQuantityBackgroundColor(order.color)
             .setQuantityBorderColor(order.color)
-            // .setLineStyle(lineStyle)
+            .setLineStyle(lineStyle)
             .setLineLength(25)
             .setLineColor(order.color)
             .setBodyFont("inherit 14px Arial")
