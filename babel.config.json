@@ -13,8 +13,7 @@
         "corejs": "3.6.5"
       }
     ],
-    "@babel/preset-react",
-    "@babel/preset-typescript"
+    "@babel/preset-react"
   ],
   "ignore": ["src/lib/charting_library", "node_modules", "docs", ".github"]
 }
