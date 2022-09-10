@@ -1,54 +1,58 @@
 const channelToSubscription = new Map();
 
-const socket = new WebSocket("wss://stream.binance.com:9443/ws");
-socket.onopen = (event) => {
-  console.log("[socket] Connected", event);
-};
-
-socket.onclose = (reason) => {
-  console.log("[socket] Disconnected:", reason);
-};
-
-socket.onerror = (error) => {
-  console.log("[socket] Error:", error);
-};
-
-socket.onmessage = (e) => {
-  const data = JSON.parse(e.data);
-  if (data.e == undefined) {
-    // skip all non-TRADE events
-    return;
-  }
-  const {
-    s: symbol,
-    t: startTime,
-    T: closeTime,
-    i: interval,
-    o: open,
-    c: close,
-    h: high,
-    l: low,
-    v: volume,
-    n: trades,
-    q: quoteVolume,
-  } = data.k;
-
-  const channelString = `${symbol.toLowerCase()}@kline_${interval}`;
-  const subscriptionItem = channelToSubscription.get(channelString);
-  if (subscriptionItem === undefined) {
-    return;
-  }
-  const bar = {
-    time: startTime,
-    open: open,
-    high: high,
-    low: low,
-    close: close,
-    volume: volume,
+function setupSockets(subRequest) {
+  const socket = new WebSocket("wss://stream.binance.com:9443/ws");
+  window.socket = socket;
+  socket.onopen = (event) => {
+    console.log("[socket] Connected");
+    socket.send(JSON.stringify(subRequest));
   };
-  // send data to every subscriber of that symbol
-  subscriptionItem.handlers.forEach((handler) => handler.callback(bar));
-};
+
+  socket.onclose = (reason) => {
+    console.log("[socket] Disconnected:", reason);
+  };
+
+  socket.onerror = (error) => {
+    console.log("[socket] Error:", error);
+  };
+
+  socket.onmessage = (e) => {
+    const data = JSON.parse(e.data);
+    if (data.e == undefined) {
+      // skip all non-TRADE events
+      return;
+    }
+    const {
+      s: symbol,
+      t: startTime,
+      T: closeTime,
+      i: interval,
+      o: open,
+      c: close,
+      h: high,
+      l: low,
+      v: volume,
+      n: trades,
+      q: quoteVolume,
+    } = data.k;
+
+    const channelString = `${symbol.toLowerCase()}@kline_${interval}`;
+    const subscriptionItem = channelToSubscription.get(channelString);
+    if (subscriptionItem === undefined) {
+      return;
+    }
+    const bar = {
+      time: startTime,
+      open: open,
+      high: high,
+      low: low,
+      close: close,
+      volume: volume,
+    };
+    // send data to every subscriber of that symbol
+    subscriptionItem.handlers.forEach((handler) => handler.callback(bar));
+  };
+}
 
 export function subscribeOnStream(
   symbolInfo,
@@ -80,7 +84,7 @@ export function subscribeOnStream(
     id: 1,
   };
   channelToSubscription.set(channelString, subscriptionItem);
-  socket.send(JSON.stringify(subRequest));
+  setupSockets(subRequest);
 }
 
 export function unsubscribeFromStream(subscriberUID) {
@@ -106,8 +110,9 @@ export function unsubscribeFromStream(subscriberUID) {
           params: [channelString],
           id: 1,
         };
-        socket.send(JSON.stringify(subRequest));
+        window.socket.send(JSON.stringify(subRequest));
         channelToSubscription.delete(channelString);
+        window.socket = undefined;
         break;
       }
     }
