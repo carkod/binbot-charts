@@ -17,7 +17,7 @@ export default function TVChartContainer({
   const containerRef = useRef(null);
 
   const [chartOrderLines, setChartOrderLines] = useImmer([]);
-  const [widgetState, setWidgetState] = useState(null);
+  const [widgetState, setWidgetState] = useImmer(null);
   const [symbolState] = useState(null)
 
   useEffect(() => {
@@ -108,7 +108,9 @@ export default function TVChartContainer({
             .setPrice(order.price);
 
           // set custom id easier search
-          chartOrderLine.id = order.id
+          setWidgetState(produce(d => {
+            draft.id = order.id
+          }));
 
           setChartOrderLines((draft) => {
             draft.push(chartOrderLine);
