@@ -76,7 +76,7 @@ export default function TVChartContainer({
     if (chartOrderLines && chartOrderLines.length > 0) {
       chartOrderLines.forEach((item) => {
         orderLines.forEach(order => {
-          if (item._data.id == order.id) {
+          if (item.id == order.id) {
             item
               .setText(order.text)
               .setTooltip(order.tooltip)
