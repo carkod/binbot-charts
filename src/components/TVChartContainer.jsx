@@ -18,7 +18,7 @@ export default function TVChartContainer({
 
   const [chartOrderLines, setChartOrderLines] = useImmer([]);
   const [widgetState, setWidgetState] = useState(null);
-  const [symbolState, setSymbolState] = useState(null)
+  const [symbolState] = useState(null)
 
   useEffect(() => {
     if (!widgetState) {
@@ -76,6 +76,7 @@ export default function TVChartContainer({
     if (chartOrderLines && chartOrderLines.length > 0) {
       chartOrderLines.forEach((item) => {
         orderLines.forEach(order => {
+          debugger
           if (item._data.bodyText == order.text) {
             item
               .setText(order.text)
@@ -90,7 +91,7 @@ export default function TVChartContainer({
       if (orderLines && orderLines.length > 0) {
         orderLines.forEach((order) => {
           const lineStyle = order.lineStyle || 0;
-          const chartOrderLine = widgetState
+          let chartOrderLine = widgetState
             .chart()
             .createOrderLine()
             .setText(order.text)
@@ -106,6 +107,9 @@ export default function TVChartContainer({
             .setBodyBorderColor(order.color)
             .setBodyTextColor(order.color)
             .setPrice(order.price);
+
+          // set custom id easier search
+          chartOrderLine.id = order.id
 
           setChartOrderLines((draft) => {
             draft.push(chartOrderLine);

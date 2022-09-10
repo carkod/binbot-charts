@@ -39,6 +39,7 @@ export default function App() {
     if (currentPrice) {
       setOrderLines((draft) => {
         draft.push({
+          id: "base_order",
           text: "Base",
           tooltip: ["Inactive"],
           quantity: `XX USDT`,
@@ -49,6 +50,7 @@ export default function App() {
       });
       setOrderLines((draft) => {
         draft.push({
+          id: "take_profit",
           text: "Take profit",
           tooltip: ["Inactive"],
           quantity: `XX USDT`,
