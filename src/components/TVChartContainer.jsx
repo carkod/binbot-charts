@@ -108,9 +108,7 @@ export default function TVChartContainer({
             .setPrice(order.price);
 
           // set custom id easier search
-          setWidgetState(produce(d => {
-            draft.id = order.id
-          }));
+          chartOrderLine.id = order.id
 
           setChartOrderLines((draft) => {
             draft.push(chartOrderLine);
