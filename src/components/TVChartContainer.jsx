@@ -87,7 +87,7 @@ export default function TVChartContainer({
         
       });
     } else {
-      if (orderLines && orderLines.length > 0) {
+      if (widgetState && orderLines && orderLines.length > 0) {
         orderLines.forEach((order) => {
           const lineStyle = order.lineStyle || 0;
           let chartOrderLine = widgetState
