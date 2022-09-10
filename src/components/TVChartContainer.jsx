@@ -18,7 +18,7 @@ export default function TVChartContainer({
 
   const [chartOrderLines, setChartOrderLines] = useImmer([]);
   const [widgetState, setWidgetState] = useState(null);
-  // const [symbolState, setSymbolState] = useState(null)
+  const [symbolState, setSymbolState] = useState(null)
 
   useEffect(() => {
     if (!widgetState) {
@@ -29,9 +29,9 @@ export default function TVChartContainer({
       updateOrderLines(orderLines);
     }
     
-    // if (widgetState && symbol !== symbolState) {
-    //   widgetState.setSymbol(symbol, interval);
-    // }
+    if (widgetState && symbol !== symbolState) {
+      widgetState.setSymbol(symbol, interval);
+    }
 
   }, [orderLines]);
 

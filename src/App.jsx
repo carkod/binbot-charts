@@ -26,6 +26,7 @@ const testOrderLines = [
 export default function App() {
   const [currentPrice, setCurrentPrice] = useState(null);
   const [orderLines, setOrderLines] = useImmer([]);
+  const [symbolState, setSymbolState] = useState("APEUSDT")
 
   useEffect(() => {
     if (currentPrice) {
@@ -66,11 +67,18 @@ export default function App() {
   const getLatestBar = (bar) => {
     setCurrentPrice(bar[3]);
   };
+  const handleChange = (e) => {
+    if (e.target.name === "symbol") {
+      setSymbolState(e.target.value);
+    }
+  }
   return (
     <>
       <h1 style={{ textAlign: "center" }}>Test chart</h1>
+      <label htmlFor="symbol">Type symbol</label>
+      <input name="symbol" type="text" onChange={handleChange} />
       <TVChartContainer
-        symbol="APEUSDT"
+        symbol={symbolState}
         interval="1h"
         timescaleMarks={testTimeMarks}
         orderLines={orderLines}
