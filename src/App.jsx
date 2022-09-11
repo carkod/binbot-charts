@@ -13,16 +13,6 @@ const testTimeMarks = [
   },
 ];
 
-const testOrderLines = [
-  {
-    text: "Take profit 10%",
-    tooltip: ["Additional position information"],
-    quantity: "200 USDT",
-    price: 4.85,
-    color: "green",
-  },
-];
-
 export default function App() {
   const [currentPrice, setCurrentPrice] = useState(null);
   const [orderLines, setOrderLines] = useImmer([]);
