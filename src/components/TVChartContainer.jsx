@@ -36,9 +36,18 @@ export default function TVChartContainer({
   }, [orderLines]);
 
   const initializeChart = () => {
+    const testTimescaleMarks = [
+      {
+        id: "tsm4",
+        time: 1662301800,
+        color: "red",
+        label: "B",
+        tooltip: ["Safety Order 4"],
+      },
+    ];
     const widgetOptions = {
       symbol: symbol,
-      datafeed: new Datafeed(timescaleMarks),
+      datafeed: new Datafeed(testTimescaleMarks),
       interval: interval,
       container: containerRef.current,
       library_path: libraryPath,

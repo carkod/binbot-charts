@@ -66,6 +66,7 @@ export default function App() {
   }
   return (
     <>
+      {console.log(testTimeMarks)}
       <h1 style={{ textAlign: "center" }}>Test chart</h1>
       <label htmlFor="symbol">Type symbol</label>
       <input name="symbol" type="text" onChange={handleChange} />
