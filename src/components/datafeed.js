@@ -156,7 +156,7 @@ export default class Datafeed {
       this.timescaleMarks.forEach((mark) => {
         let time = new Date(mark.time * 1000);
         time.setHours(1, 0, 0, 0);
-        const roundFloor = time.getTime() / 1000;
+        const roundFloor = time.getTime();
         mark.time = roundFloor;
         timescaleMarks.push(mark);
       });
