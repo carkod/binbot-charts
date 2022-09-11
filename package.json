@@ -1,5 +1,5 @@
 {
-  "version": "0.2.30",
+  "version": "0.2.31",
   "name": "binbot-charts",
   "dependencies": {
     "react": "^17.0.1",
