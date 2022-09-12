@@ -1,28 +1,28 @@
-import React, { Component, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useImmer } from "use-immer";
 import "./App.css";
 import TVChartContainer from "./components/TVChartContainer";
 
-const testTimeMarks = [
-  {
-    id: "tsm4",
-    time: 1662301800,
-    color: "red",
-    label: "B",
-    tooltip: ["Safety Order 4"],
-  },
-];
+function roundTime(ts) {
+  let time = new Date(ts * 1000);
+  time.setMinutes(0);
+  time.setSeconds(0)
+  time.setMilliseconds(0);
+  const roundFloor = time.getTime() / 1000;
+  return roundFloor
+}
 
 export default function App() {
   const [currentPrice, setCurrentPrice] = useState(null);
   const [orderLines, setOrderLines] = useImmer([]);
   const [symbolState, setSymbolState] = useState("APEUSDT")
+  const [testTimeMarks, setTestTimeMarks] = useState([])
 
   useEffect(() => {
     if (currentPrice) {
       updateOrderLines()
     }
-    
+
   }, [currentPrice]);
 
   const updateOrderLines = () => {
@@ -58,6 +58,13 @@ export default function App() {
   };
   const getLatestBar = (bar) => {
     setCurrentPrice(bar[3]);
+    setTestTimeMarks([{
+      id: "tsm4",
+      time: roundTime(1662301800),
+      color: "blue",
+      label: "B",
+      tooltip: ["Safety Order 4"],
+    }])
   };
   const handleChange = (e) => {
     if (e.target.name === "symbol") {
@@ -66,7 +73,6 @@ export default function App() {
   }
   return (
     <>
-      {console.log(testTimeMarks)}
       <h1 style={{ textAlign: "center" }}>Test chart</h1>
       <label htmlFor="symbol">Type symbol</label>
       <input name="symbol" type="text" onChange={handleChange} />

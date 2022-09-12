@@ -3,6 +3,8 @@ import { widget } from "../charting_library";
 import Datafeed from "./datafeed";
 import PropTypes from "prop-types";
 import { useImmer } from "use-immer";
+import { usePrevious } from "./helpers";
+
 
 export default function TVChartContainer({
   symbol = "APEUSDT",
@@ -19,6 +21,8 @@ export default function TVChartContainer({
   const [chartOrderLines, setChartOrderLines] = useImmer([]);
   const [widgetState, setWidgetState] = useImmer(null);
   const [symbolState] = useState(null)
+  // const prevTimescaleMarks = usePrevious(timescaleMarks);
+  const prevTimescaleMarks = useRef(timescaleMarks);
 
   useEffect(() => {
     if (!widgetState) {
@@ -33,21 +37,17 @@ export default function TVChartContainer({
       widgetState.setSymbol(symbol, interval);
     }
 
-  }, [orderLines]);
+    if (prevTimescaleMarks.current && timescaleMarks !== prevTimescaleMarks.current) {
+      widgetState._options.datafeed.timescaleMarks = timescaleMarks
+      prevTimescaleMarks.current = timescaleMarks
+    }
+
+  }, [orderLines, timescaleMarks]);
 
   const initializeChart = () => {
-    const testTimescaleMarks = [
-      {
-        id: "tsm4",
-        time: 1662301800,
-        color: "red",
-        label: "B",
-        tooltip: ["Safety Order 4"],
-      },
-    ];
     const widgetOptions = {
       symbol: symbol,
-      datafeed: new Datafeed(testTimescaleMarks),
+      datafeed: new Datafeed(timescaleMarks),
       interval: interval,
       container: containerRef.current,
       library_path: libraryPath,

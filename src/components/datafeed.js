@@ -151,16 +151,7 @@ export default class Datafeed {
 
   getTimescaleMarks(symbolInfo, from, to, onDataCallback, resolution) {
     if (this.timescaleMarks.length > 0) {
-      let timescaleMarks = [];
-      this.timescaleMarks.forEach((mark) => {
-        let time = new Date(mark.time * 1000);
-        time.setMinutes(0);
-        time.setSeconds(0)
-        time.setMilliseconds(0);
-        const roundFloor = time.getTime() / 1000;
-        mark.time = roundFloor;
-        timescaleMarks.push(mark);
-      });
+      let timescaleMarks = Object.assign([], this.timescaleMarks);
       onDataCallback(timescaleMarks);
     }
   }

@@ -1,3 +1,6 @@
+import { useEffect, useRef } from "react";
+
+
 export async function makeApiRequest(path) {
   try {
     const response = await fetch(`https://api.binance.com/${path}`);
@@ -27,4 +30,12 @@ export async function getAllSymbols(symbol) {
     return newSymbols
   }
   return newSymbols;
+}
+
+export function usePrevious(value) {
+  const ref = useRef();
+  useEffect(() => {
+    ref.current = value;
+  });
+  return ref.current;
 }
