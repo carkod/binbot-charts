@@ -1,28 +1,48 @@
 import { getAllSymbols, makeApiRequest } from "./helpers.js";
 import { subscribeOnStream, unsubscribeFromStream } from "./streaming.js";
 
+const binanceResolutions = [
+  "1s",
+  "1m",
+  "3m",
+  "5m",
+  "15m",
+  "30m",
+  "1h",
+  "2h",
+  "4h",
+  "6h",
+  "8h",
+  "12h",
+  "1d",
+  "3d",
+  "1w",
+  "1M",
+];
+
 const getConfigurationData = async () => {
   return {
     supports_marks: true,
     supports_time: true,
     supports_timescale_marks: true,
+    supports_time: true,
     supported_resolutions: [
-      "1s",
-      "1m",
-      "3m",
-      "5m",
-      "15m",
-      "30m",
-      "1h",
-      "2h",
-      "4h",
-      "6h",
-      "8h",
-      "12h",
-      "1d",
-      "3d",
-      "1w",
-      "1M",
+      "1S",
+      "1",
+      "3",
+      "5",
+      "15",
+      "30",
+      "60",
+      "120",
+      "240",
+      "360",
+      "480",
+      "720",
+      "1D",
+      "3D",
+      "1W",
+      "12M",
     ],
     exchanges: [
       {
@@ -41,10 +61,9 @@ const getConfigurationData = async () => {
 };
 
 export default class Datafeed {
-  constructor(timescaleMarks = [], interval = "1h") {
+  constructor(timescaleMarks = []) {
     this.streaming = null;
-    this.interval = interval;
-    this.timescaleMarks = timescaleMarks
+    this.timescaleMarks = timescaleMarks;
   }
   onReady = async (callback) => {
     this.configurationData = await getConfigurationData();
@@ -83,10 +102,12 @@ export default class Datafeed {
         exchange: "Binance",
         minmov: 100,
         pricescale: 100000,
+        has_daily: true,  
         has_intraday: true,
         has_no_volume: false,
+        has_seconds: true,
+        seconds_multipliers: [1],
         volume: "hundreds",
-        has_weekly_and_monthly: true,
         volume_precision: 9,
         data_status: "streaming",
         resolution: "1h",
@@ -103,11 +124,22 @@ export default class Datafeed {
     onHistoryCallback,
     onErrorCallback
   ) => {
-    console.log(periodParams)
     const { from, to, firstDataRequest } = periodParams;
+    let interval = "60"; // 1 hour
+    // Calculate interval using resolution data
+    if (!/[a-zA-Z]$/.test(resolution)) {
+      if (parseInt(resolution) >= 60) {
+        interval = parseInt(resolution) / 60 + "h";
+      } else {
+        interval = resolution + "m";
+      }
+    } else {
+      interval = resolution.toLowerCase().replace(/[a-z]\b/g, c => c.toLowerCase())
+    }
+
     let urlParameters = {
       symbol: symbolInfo.name,
-      interval: this.interval,
+      interval: interval,
       startTime: Math.abs(from * 1000),
       endTime: Math.abs(to * 1000),
       limit: 600,
@@ -116,6 +148,7 @@ export default class Datafeed {
     const query = Object.keys(urlParameters)
       .map((name) => `${name}=${encodeURIComponent(urlParameters[name])}`)
       .join("&");
+
     try {
       const data = await makeApiRequest(`api/v3/uiKlines?${query}`);
       if ((data.Response && data.Response === "Error") || data.length === 0) {
@@ -155,6 +188,12 @@ export default class Datafeed {
       let timescaleMarks = Object.assign([], this.timescaleMarks);
       onDataCallback(timescaleMarks);
     }
+  }
+
+  async getServerTime(onServertimeCallback) {
+    const data = await makeApiRequest(`api/v3/time`);
+    const serverTime = (data.serverTime / 1000)
+    onServertimeCallback(serverTime)
   }
 
   subscribeBars = (

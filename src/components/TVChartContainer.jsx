@@ -126,11 +126,7 @@ export default function TVChartContainer({
     }
   };
 
-  return (
-    <>
-      <div ref={containerRef} style={{ height: height }} />
-    </>
-  );
+  return <div ref={containerRef} style={{ height: height }} />
 }
 
 TVChartContainer.propTypes = {
