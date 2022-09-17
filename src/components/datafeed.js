@@ -103,12 +103,13 @@ export default class Datafeed {
     onHistoryCallback,
     onErrorCallback
   ) => {
+    console.log(periodParams)
     const { from, to, firstDataRequest } = periodParams;
     let urlParameters = {
       symbol: symbolInfo.name,
       interval: this.interval,
-      startTime: from * 1000,
-      endTime: to * 1000,
+      startTime: Math.abs(from * 1000),
+      endTime: Math.abs(to * 1000),
       limit: 600,
     };
 

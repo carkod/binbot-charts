@@ -3,7 +3,6 @@ import { widget } from "../charting_library";
 import Datafeed from "./datafeed";
 import PropTypes from "prop-types";
 import { useImmer } from "use-immer";
-import { usePrevious } from "./helpers";
 
 
 export default function TVChartContainer({
@@ -21,7 +20,6 @@ export default function TVChartContainer({
   const [chartOrderLines, setChartOrderLines] = useImmer([]);
   const [widgetState, setWidgetState] = useImmer(null);
   const [symbolState] = useState(null)
-  // const prevTimescaleMarks = usePrevious(timescaleMarks);
   const prevTimescaleMarks = useRef(timescaleMarks);
 
   useEffect(() => {
@@ -37,7 +35,7 @@ export default function TVChartContainer({
       widgetState.setSymbol(symbol, interval);
     }
 
-    if (prevTimescaleMarks.current && timescaleMarks !== prevTimescaleMarks.current) {
+    if (widgetState && prevTimescaleMarks.current && timescaleMarks !== prevTimescaleMarks.current) {
       widgetState._options.datafeed.timescaleMarks = timescaleMarks
       prevTimescaleMarks.current = timescaleMarks
     }
