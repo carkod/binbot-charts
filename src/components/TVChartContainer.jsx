@@ -6,7 +6,7 @@ import { useImmer } from "use-immer";
 
 
 export default function TVChartContainer({
-  symbol = "APEUSDT",
+  symbol = "BTCUSDT",
   interval = "1h",
   libraryPath = "/charting_library/",
   timescaleMarks = [],
@@ -24,7 +24,7 @@ export default function TVChartContainer({
 
   useEffect(() => {
     if (!widgetState) {
-      initializeChart();
+      initializeChart("1h");
     }
 
     if (orderLines && orderLines.length > 0) {
@@ -42,10 +42,10 @@ export default function TVChartContainer({
 
   }, [orderLines, timescaleMarks]);
 
-  const initializeChart = () => {
+  const initializeChart = (interval) => {
     const widgetOptions = {
       symbol: symbol,
-      datafeed: new Datafeed(timescaleMarks),
+      datafeed: new Datafeed(timescaleMarks, interval),
       interval: interval,
       container: containerRef.current,
       library_path: libraryPath,
