@@ -60,10 +60,15 @@ const getConfigurationData = async () => {
   };
 };
 
+/**
+ * @param timescale { Array }. timescaleMark objects
+ * @param interval { string }. Klines timescale from the list of Binance Enums
+ */
 export default class Datafeed {
-  constructor(timescaleMarks = []) {
+  constructor(timescaleMarks = [], interval = "1h") {
     this.streaming = null;
     this.timescaleMarks = timescaleMarks;
+    this.interval = interval
   }
   onReady = async (callback) => {
     this.configurationData = await getConfigurationData();

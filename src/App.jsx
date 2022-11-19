@@ -15,7 +15,7 @@ function roundTime(ts) {
 export default function App() {
   const [currentPrice, setCurrentPrice] = useState(null);
   const [orderLines, setOrderLines] = useImmer([]);
-  const [symbolState, setSymbolState] = useState("APEUSDT")
+  const [symbolState, setSymbolState] = useState("BTCUSDT")
   const [testTimeMarks, setTestTimeMarks] = useState([])
 
   useEffect(() => {

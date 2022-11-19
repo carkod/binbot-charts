@@ -1,5 +1,5 @@
 {
-  "version": "0.3.0",
+  "version": "0.3.1",
   "name": "binbot-charts",
   "dependencies": {
     "react": "^17.0.1",
@@ -18,7 +18,7 @@
     "build": "rm -rf dist && NODE_ENV=production babel -d dist/components src/components --extensions \".js,.jsx\" && cp -r src/charting_library dist/charting_library",
     "release": "yarn build && yarn publish"
   },
-  "description": "Binbot charts is the default candlestick bars chart used in terminal.binbot.com to render bots graphically.",
+  "description": "Binbot charts is the default candlestick bars chart used in terminal.binbot.in to render bots graphically.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/carkod/binbot-charts.git"
