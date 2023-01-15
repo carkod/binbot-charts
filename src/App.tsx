@@ -1,9 +1,31 @@
 import React, { useEffect, useState } from "react";
 import { useImmer } from "use-immer";
+import { Immutable } from "immer";
 import "./App.css";
 import TVChartContainer from "./components/TVChartContainer";
 
-function roundTime(ts) {
+
+type OrderLines = Immutable<{
+  id: string; // ["base_order", "take_profit" ...]
+  text: string;
+  tooltip: [string],
+  quantity: string,
+  price: string,
+  color: string, // hex color
+}>
+
+type TimeMarks = Immutable<{
+  id: string,
+  time: number,
+  color: string,
+  label: string, // one letter
+  tooltip: [string],
+}>
+
+function roundTime(ts: number): number {
+  /**
+   * @param ts a JavaScript new Date().getTime() timestamp
+   */
   let time = new Date(ts);
   time.setMinutes(0);
   time.setSeconds(0)
@@ -12,11 +34,11 @@ function roundTime(ts) {
   return roundFloor / 1000
 }
 
-export default function App() {
+export default function App(): React.ReactElement<{}> {
   const [currentPrice, setCurrentPrice] = useState(null);
-  const [orderLines, setOrderLines] = useImmer([]);
+  const [orderLines , setOrderLines] = useImmer<Array<OrderLines>>([]);
   const [symbolState, setSymbolState] = useState("BTCUSDT")
-  const [testTimeMarks, setTestTimeMarks] = useState([])
+  const [testTimeMarks, setTestTimeMarks] = useState<Array<TimeMarks>>([])
 
   useEffect(() => {
     if (currentPrice) {
