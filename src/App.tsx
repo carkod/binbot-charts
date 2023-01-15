@@ -81,8 +81,7 @@ export default function App(): React.ReactElement<{}> {
   const getLatestBar = (bar) => {
     const purchaseTs = new Date(2023, 0, 14, 13, 0).getTime()
     setCurrentPrice(bar[3]);
-    console.log(roundTime(purchaseTs))
-    setTestTimeMarks([{
+g    setTestTimeMarks([{
       id: "tsm4",
       time: roundTime(purchaseTs),
       color: "blue",
