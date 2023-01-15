@@ -4,12 +4,12 @@ import "./App.css";
 import TVChartContainer from "./components/TVChartContainer";
 
 function roundTime(ts) {
-  let time = new Date(ts * 1000);
+  let time = new Date(ts);
   time.setMinutes(0);
   time.setSeconds(0)
   time.setMilliseconds(0);
-  const roundFloor = time.getTime() / 1000;
-  return roundFloor
+  const roundFloor = time.getTime();
+  return roundFloor / 1000
 }
 
 export default function App() {
@@ -57,10 +57,11 @@ export default function App() {
     setCurrentPrice(ohlc.close);
   };
   const getLatestBar = (bar) => {
+    const purchaseTs = new Date(2023, 0, 14, 13, 0).getTime()
     setCurrentPrice(bar[3]);
     setTestTimeMarks([{
       id: "tsm4",
-      time: roundTime(1662301800),
+      time: roundTime(purchaseTs),
       color: "blue",
       label: "B",
       tooltip: ["Safety Order 4"],
