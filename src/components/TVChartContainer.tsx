@@ -1,49 +1,71 @@
 import React, { useEffect, useRef, useState } from "react";
-import { widget } from "../charting_library";
+import {
+  ChartingLibraryWidgetOptions,
+  ResolutionString,
+  widget,
+} from "../charting_library/charting_library.js";
 import Datafeed from "./datafeed";
-import PropTypes from "prop-types";
 import { useImmer } from "use-immer";
+import { IOrderLine } from "./charting-library-interfaces";
 
+export interface OrderLine extends IOrderLine {
+  id: string;
+  lineStyle?: number;
+}
 
-export default function TVChartContainer({
+interface TVChartContainerProps {
+  symbol?: string;
+  interval?: ResolutionString;
+  libraryPath?: string;
+  timescaleMarks?: any[];
+  orderLines?: OrderLine[];
+  height?: string;
+  onTick?: (event: any) => void;
+  getLatestBar?: (data: any) => void;
+}
+
+const TVChartContainer: React.FC<TVChartContainerProps> = ({
   symbol = "BTCUSDT",
-  interval = "1h",
+  interval = "1h" as ResolutionString,
   libraryPath = "/charting_library/",
   timescaleMarks = [],
   orderLines = [],
   height = "calc(100vh - 80px)",
   onTick,
   getLatestBar,
-}) {
-  const containerRef = useRef(null);
+}) => {
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
-  const [chartOrderLines, setChartOrderLines] = useImmer([]);
-  const [widgetState, setWidgetState] = useImmer(null);
-  const [symbolState] = useState(null)
-  const prevTimescaleMarks = useRef(timescaleMarks);
+  const [chartOrderLines, setChartOrderLines] = useImmer<any[]>([]);
+  const [widgetState, setWidgetState] = useImmer<any>(null);
+  const [symbolState] = useState<string | null>(null);
+  const prevTimescaleMarks = useRef<any[]>(timescaleMarks);
 
   useEffect(() => {
     if (!widgetState) {
-      initializeChart("1h");
+      initializeChart(interval);
     }
 
     if (orderLines && orderLines.length > 0) {
       updateOrderLines(orderLines);
     }
-    
+
     if (widgetState && symbol !== symbolState) {
       widgetState.setSymbol(symbol, interval);
     }
 
-    if (widgetState && prevTimescaleMarks.current && timescaleMarks !== prevTimescaleMarks.current) {
-      widgetState._options.datafeed.timescaleMarks = timescaleMarks
-      prevTimescaleMarks.current = timescaleMarks
+    if (
+      widgetState &&
+      prevTimescaleMarks.current &&
+      timescaleMarks !== prevTimescaleMarks.current
+    ) {
+      widgetState._options.datafeed.timescaleMarks = timescaleMarks;
+      prevTimescaleMarks.current = timescaleMarks;
     }
-
   }, [orderLines, timescaleMarks]);
 
-  const initializeChart = (interval) => {
-    const widgetOptions = {
+  const initializeChart = (interval: ResolutionString) => {
+    const widgetOptions: ChartingLibraryWidgetOptions = {
       symbol: symbol,
       datafeed: new Datafeed(timescaleMarks, interval),
       interval: interval,
@@ -59,11 +81,10 @@ export default function TVChartContainer({
         "mainSeriesProperties.barStyle.dontDrawOpen": false,
       },
     };
-    const tvWidget = new widget(widgetOptions);
+    const tvWidget = new TradingView.widget(widgetOptions);
 
     tvWidget.onChartReady(() => {
-
-      tvWidget.subscribe("onTick", (event) => onTick(event));
+      tvWidget.subscribe("onTick", (event: any) => onTick && onTick(event));
       setWidgetState(tvWidget);
 
       // get latest bar for last price
@@ -73,16 +94,16 @@ export default function TVChartContainer({
           includeSeries: true,
           includedStudies: [],
         });
-        getLatestBar(data.data[data.data.length - 1]);
+        getLatestBar && getLatestBar(data.data[data.data.length - 1]);
       };
       prices();
     });
   };
 
-  const updateOrderLines = (orderLines) => {
+  const updateOrderLines = (orderLines: OrderLine[]) => {
     if (chartOrderLines && chartOrderLines.length > 0) {
       chartOrderLines.forEach((item) => {
-        orderLines.forEach(order => {
+        orderLines.forEach((order) => {
           if (item.id == order.id) {
             item
               .setText(order.text)
@@ -90,8 +111,7 @@ export default function TVChartContainer({
               .setQuantity(order.quantity)
               .setPrice(order.price);
           }
-        })
-        
+        });
       });
     } else {
       if (widgetState && orderLines && orderLines.length > 0) {
@@ -115,7 +135,7 @@ export default function TVChartContainer({
             .setPrice(order.price);
 
           // set custom id easier search
-          chartOrderLine.id = order.id
+          chartOrderLine.id = order.id;
 
           setChartOrderLines((draft) => {
             draft.push(chartOrderLine);
@@ -126,17 +146,7 @@ export default function TVChartContainer({
     }
   };
 
-  return <div ref={containerRef} style={{ height: height }} />
-}
-
-TVChartContainer.propTypes = {
-  apiKey: PropTypes.string,
-  symbol: PropTypes.string,
-  interval: PropTypes.string,
-  libraryPath: PropTypes.string,
-  timescaleMarks: PropTypes.array,
-  orderLines: PropTypes.array,
-  height: PropTypes.string,
-  onTick: PropTypes.func,
-  getLatestBar: PropTypes.func,
+  return <div ref={containerRef} style={{ height: height }} />;
 };
+
+export default TVChartContainer;

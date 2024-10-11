@@ -2,25 +2,11 @@ import React, { useEffect, useState } from "react";
 import { useImmer } from "use-immer";
 import { Immutable } from "immer";
 import "./App.css";
-import TVChartContainer from "./components/TVChartContainer";
+import TVChartContainer, { OrderLine } from "./components/TVChartContainer";
+import { ResolutionString } from "./charting_library/charting_library";
+import { IOrderLine, ITimescaleMarks } from "./components/charting-library-interfaces";
 
-
-type OrderLines = Immutable<{
-  id: string; // ["base_order", "take_profit" ...]
-  text: string;
-  tooltip: [string],
-  quantity: string,
-  price: string,
-  color: string, // hex color
-}>
-
-type TimeMarks = Immutable<{
-  id: string,
-  time: number,
-  color: string,
-  label: string, // one letter
-  tooltip: [string],
-}>
+type TimeMarks = Immutable<ITimescaleMarks>
 
 function roundTime(ts: number): number {
   /**
@@ -36,7 +22,7 @@ function roundTime(ts: number): number {
 
 export default function App(): React.ReactElement<{}> {
   const [currentPrice, setCurrentPrice] = useState(null);
-  const [orderLines , setOrderLines] = useImmer<Array<OrderLines>>([]);
+  const [orderLines , setOrderLines] = useImmer<OrderLine[]>([]);
   const [symbolState, setSymbolState] = useState("BTCUSDT")
   const [testTimeMarks, setTestTimeMarks] = useState<Array<TimeMarks>>([])
 
@@ -66,7 +52,7 @@ export default function App(): React.ReactElement<{}> {
           text: "Take profit",
           tooltip: ["Inactive"],
           quantity: `XX USDT`,
-          price: (currentPrice * 1.03).toFixed(6),
+          price: parseFloat((currentPrice * 1.03).toFixed(6)),
           color: "#1f77d0",
         });
         return draft
@@ -81,7 +67,7 @@ export default function App(): React.ReactElement<{}> {
   const getLatestBar = (bar) => {
     const purchaseTs = new Date(2023, 0, 14, 13, 0).getTime()
     setCurrentPrice(bar[3]);
-g    setTestTimeMarks([{
+      setTestTimeMarks([{
       id: "tsm4",
       time: roundTime(purchaseTs),
       color: "blue",
@@ -101,7 +87,7 @@ g    setTestTimeMarks([{
       <input name="symbol" type="text" onChange={handleChange} />
       <TVChartContainer
         symbol={symbolState}
-        interval="1h"
+        interval={"1h" as ResolutionString}
         timescaleMarks={testTimeMarks}
         orderLines={orderLines}
         onTick={handleTick}
