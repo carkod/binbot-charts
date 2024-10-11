@@ -81,7 +81,7 @@ const TVChartContainer: React.FC<TVChartContainerProps> = ({
         "mainSeriesProperties.barStyle.dontDrawOpen": false,
       },
     };
-    const tvWidget = new TradingView.widget(widgetOptions);
+    const tvWidget = new widget(widgetOptions);
 
     tvWidget.onChartReady(() => {
       tvWidget.subscribe("onTick", (event: any) => onTick && onTick(event));

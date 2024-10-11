@@ -106,7 +106,7 @@ export default class Datafeed {
         timezone: "Etc/UTC",
         exchange: "Binance",
         minmov: 100,
-        pricescale: 100000000,
+        pricescale: 100000,
         has_daily: true,  
         has_intraday: true,
         has_no_volume: false,
