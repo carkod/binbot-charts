@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
+import { type FC, useEffect, useState } from "react";
 import { useImmer } from "use-immer";
 import { Immutable } from "immer";
 import "./App.css";
 import TVChartContainer, { OrderLine } from "./components/TVChartContainer";
 import { ResolutionString } from "./charting_library/charting_library";
-import { IOrderLine, ITimescaleMarks } from "./components/charting-library-interfaces";
+import { ITimescaleMarks } from "./components/charting-library-interfaces";
 
 type TimeMarks = Immutable<ITimescaleMarks>
 
@@ -20,7 +20,7 @@ function roundTime(ts: number): number {
   return roundFloor / 1000
 }
 
-export default function App(): React.ReactElement<{}> {
+export const App: FC<{}> = (): JSX.Element => {
   const [currentPrice, setCurrentPrice] = useState(null);
   const [orderLines , setOrderLines] = useImmer<OrderLine[]>([]);
   const [symbolState, setSymbolState] = useState("BTCUSDT")
@@ -96,3 +96,5 @@ export default function App(): React.ReactElement<{}> {
     </>
   );
 }
+
+export default App;

@@ -3,7 +3,7 @@ import {
   ChartingLibraryWidgetOptions,
   ResolutionString,
   widget,
-} from "../charting_library/charting_library.js";
+} from "../charting_library/charting_library";
 import Datafeed from "./datafeed";
 import { useImmer } from "use-immer";
 import { IOrderLine } from "./charting-library-interfaces";
