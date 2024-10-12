@@ -2,9 +2,9 @@ import { type FC, useEffect, useState } from "react";
 import { useImmer } from "use-immer";
 import { Immutable } from "immer";
 import "./App.css";
-import TVChartContainer, { OrderLine } from "./components/TVChartContainer";
+import TVChartContainer, { OrderLine } from "./main";
 import { ResolutionString } from "./charting_library/charting_library";
-import { ITimescaleMarks } from "./components/charting-library-interfaces";
+import { ITimescaleMarks } from "./charting-library-interfaces";
 
 type TimeMarks = Immutable<ITimescaleMarks>
 
