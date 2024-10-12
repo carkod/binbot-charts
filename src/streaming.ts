@@ -1,7 +1,11 @@
 const channelToSubscription = new Map();
 
+declare global {
+  interface Window { socket: WebSocket; }
+}
+
 function setupSockets(subRequest) {
-  const socket = new WebSocket("wss://stream.binance.com:9443/ws");
+  const socket: WebSocket = new WebSocket("wss://stream.binance.com:9443/ws");
   window.socket = socket;
   socket.onopen = (event) => {
     console.log("[socket] Connected");

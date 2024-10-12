@@ -1,25 +1,27 @@
 {
-  "version": "0.3.0",
+  "version": "0.6.9",
   "name": "binbot-charts",
   "dependencies": {
-    "react": "^17.0.1",
-    "react-dom": "^17.0.1",
-    "use-immer": "^0.7.0"
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "use-immer": "^0.10.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.18.10",
     "@babel/core": "^7.18.13",
     "@babel/polyfill": "^7.12.1",
     "@babel/preset-env": "^7.19.0",
+    "@types/node": "^22.7.5",
     "@types/react": "^18.0.26",
     "@types/react-dom": "^18.0.10",
     "immer": "^9.0.17",
     "react-scripts": "^5.0.1",
-    "typescript": "^4.9.4"
+    "tsup": "^8.3.0",
+    "typescript": "^4.9.5"
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "rm -rf dist && NODE_ENV=production babel -d dist/components src/components --extensions \".js,.jsx\" && cp -r src/charting_library dist/charting_library",
+    "build": "rm -rf dist && tsup --config tsup.config.ts --env.NODE_ENV production",
     "release": "yarn build && yarn publish"
   },
   "description": "Binbot charts is the default candlestick bars chart used in terminal.binbot.in to render bots graphically.",
@@ -27,11 +29,8 @@
     "type": "git",
     "url": "git+https://github.com/carkod/binbot-charts.git"
   },
-  "module": "dist/components/index.js",
-  "main": "dist/components/index.js",
-  "files": [
-    "dist"
-  ],
+  "module": "./dist/main.js",
+  "types": "./dist/main.d.ts",
   "keywords": [
     "binbot",
     "charts"
