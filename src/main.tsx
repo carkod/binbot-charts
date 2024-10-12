@@ -1,13 +1,11 @@
-import React, { useEffect, useRef, useState } from "react";
-import {
-  ChartingLibraryWidgetOptions,
-  IDatafeedQuotesApi,
-  ResolutionString,
-  widget,
-} from "./charting_library";
-import Datafeed from "./datafeed";
+import { FC, useEffect, useRef, useState } from "react";
 import { useImmer } from "use-immer";
 import { type IOrderLine } from "./charting-library-interfaces";
+import {
+  ResolutionString,
+  widget,
+} from "./charting_library/";
+import Datafeed from "./datafeed";
 
 export interface OrderLine extends IOrderLine {
   id: string;
@@ -25,7 +23,7 @@ interface TVChartContainerProps {
   getLatestBar?: (data: any) => void;
 }
 
-export default function TVChartContainer({
+const TVChartContainer: FC<TVChartContainerProps> = ({
   symbol = "BTCUSDT",
   interval = "1h" as ResolutionString,
   libraryPath = "/charting_library/",
@@ -34,7 +32,7 @@ export default function TVChartContainer({
   height = "calc(100vh - 80px)",
   onTick,
   getLatestBar,
-}) {
+}) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   const [chartOrderLines, setChartOrderLines] = useImmer<any[]>([]);
@@ -149,3 +147,5 @@ export default function TVChartContainer({
 
   return <div ref={containerRef} style={{ height: height }} />;
 };
+
+export default TVChartContainer;

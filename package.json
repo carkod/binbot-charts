@@ -1,5 +1,5 @@
 {
-  "version": "0.6.7",
+  "version": "0.6.9",
   "name": "binbot-charts",
   "dependencies": {
     "react": "^18.3.1",
@@ -21,7 +21,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "rm -rf dist && cp -r public/charting_library dist/src/charting_library && NODE_ENV=production tsc src/*",
+    "build": "rm -rf dist && tsup --config tsup.config.ts --env.NODE_ENV production",
     "release": "yarn build && yarn publish"
   },
   "description": "Binbot charts is the default candlestick bars chart used in terminal.binbot.in to render bots graphically.",
@@ -29,8 +29,8 @@
     "type": "git",
     "url": "git+https://github.com/carkod/binbot-charts.git"
   },
-  "module": "./dist/src/main.js",
-  "types": "./dist/src/main.d.ts",
+  "module": "./dist/main.js",
+  "types": "./dist/main.d.ts",
   "keywords": [
     "binbot",
     "charts"

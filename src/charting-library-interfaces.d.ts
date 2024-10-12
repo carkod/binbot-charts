@@ -1,4 +1,4 @@
-import Datafeed from "./components/datafeed";
+import Datafeed from "./datafeed";
 
 export interface IWidgetOptions {
   symbol: string;
