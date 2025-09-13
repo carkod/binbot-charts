@@ -1,5 +1,5 @@
 {
-  "version": "0.7.2",
+  "version": "0.7.3",
   "name": "binbot-charts",
   "dependencies": {
     "use-immer": "^0.10.0"
@@ -44,6 +44,7 @@
   },
   "files": [
     "dist",
+    "public",
     "README.md",
     "LICENSE"
   ],
