@@ -178,8 +178,6 @@ export default class Datafeed {
       };
     };
     const symbol = await symbolInfo();
-    console.log("Resolve requested for:", symbol);
-
     onSymbolResolvedCallback(symbol);
   };
 
