@@ -149,7 +149,13 @@ export default class Datafeed {
       return;
     }
 
-    const symbolInfo = (): SymbolInfo => {
+    const symbolInfo = async (): Promise<SymbolInfo> => {
+
+      const symbolData = await makeApiRequest(`api/v3/exchangeInfo?symbol=${symbolName}`);
+      const priceScale = symbolData.symbols[0].baseAssetPrecision;
+
+      console.log("Symbol info:", 1 ** parseFloat(priceScale));
+
       return {
         name: symbolName,
         ticker: symbolName,
@@ -158,8 +164,8 @@ export default class Datafeed {
         session: "24x7",
         timezone: "Etc/UTC",
         exchange: "Binance",
-        minmov: 100,
-        pricescale: 100000,
+        minmov: 1,
+        pricescale: 10 ** parseFloat(priceScale),
         has_daily: true,
         has_intraday: true,
         has_no_volume: false,
@@ -172,6 +178,8 @@ export default class Datafeed {
       };
     };
     const symbol = await symbolInfo();
+    console.log("Resolve requested for:", symbol);
+
     onSymbolResolvedCallback(symbol);
   };
 
