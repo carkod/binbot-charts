@@ -5,32 +5,20 @@ import "./App.css";
 import TVChartContainer, { OrderLine } from "./main";
 import { ResolutionString } from "./charting_library/charting_library";
 import { ITimescaleMarks } from "./charting-library-interfaces";
+import { roundTime } from "./helpers";
 
-type TimeMarks = Immutable<ITimescaleMarks>
-
-function roundTime(ts: number): number {
-  /**
-   * @param ts a JavaScript new Date().getTime() timestamp
-   */
-  let time = new Date(ts);
-  time.setMinutes(0);
-  time.setSeconds(0)
-  time.setMilliseconds(0);
-  const roundFloor = time.getTime();
-  return roundFloor / 1000
-}
+type TimeMarks = Immutable<ITimescaleMarks>;
 
 export const App: FC<{}> = (): JSX.Element => {
   const [currentPrice, setCurrentPrice] = useState(null);
-  const [orderLines , setOrderLines] = useImmer<OrderLine[]>([]);
-  const [symbolState, setSymbolState] = useState("BTCUSDT")
-  const [testTimeMarks, setTestTimeMarks] = useState<Array<TimeMarks>>([])
+  const [orderLines, setOrderLines] = useImmer<OrderLine[]>([]);
+  const [symbolState, setSymbolState] = useState("QTUMBTC");
+  const [testTimeMarks, setTestTimeMarks] = useState<Array<TimeMarks>>([]);
 
   useEffect(() => {
     if (currentPrice) {
-      updateOrderLines()
+      updateOrderLines();
     }
-
   }, [currentPrice]);
 
   const updateOrderLines = () => {
@@ -44,7 +32,7 @@ export const App: FC<{}> = (): JSX.Element => {
           price: currentPrice,
           color: "#1f77d0",
         });
-        return draft
+        return draft;
       });
       setOrderLines((draft) => {
         draft.push({
@@ -55,31 +43,32 @@ export const App: FC<{}> = (): JSX.Element => {
           price: parseFloat((currentPrice * 1.03).toFixed(6)),
           color: "#1f77d0",
         });
-        return draft
+        return draft;
       });
     }
-    
-  }
+  };
 
   const handleTick = (ohlc) => {
     setCurrentPrice(ohlc.close);
   };
   const getLatestBar = (bar) => {
-    const purchaseTs = new Date(2023, 0, 14, 13, 0).getTime()
+    const purchaseTs = new Date(2023, 0, 14, 13, 0).getTime();
     setCurrentPrice(bar[3]);
-      setTestTimeMarks([{
-      id: "tsm4",
-      time: roundTime(purchaseTs),
-      color: "blue",
-      label: "B",
-      tooltip: ["Safety Order 4"],
-    }])
+    setTestTimeMarks([
+      {
+        id: "tsm4",
+        time: roundTime(purchaseTs),
+        color: "blue",
+        label: "B",
+        tooltip: ["Safety Order 4"],
+      },
+    ]);
   };
   const handleChange = (e) => {
     if (e.target.name === "symbol") {
       setSymbolState(e.target.value);
     }
-  }
+  };
   return (
     <>
       <h1 style={{ textAlign: "center" }}>Test chart</h1>
@@ -95,6 +84,6 @@ export const App: FC<{}> = (): JSX.Element => {
       />
     </>
   );
-}
+};
 
 export default App;

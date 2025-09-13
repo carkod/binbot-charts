@@ -39,3 +39,15 @@ export function usePrevious(value) {
   });
   return ref.current;
 }
+
+export function roundTime(ts: number): number {
+  /**
+   * @param ts a JavaScript new Date().getTime() timestamp
+   */
+  let time = new Date(ts);
+  time.setMinutes(0);
+  time.setSeconds(0)
+  time.setMilliseconds(0);
+  const roundFloor = time.getTime();
+  return roundFloor / 1000
+}
