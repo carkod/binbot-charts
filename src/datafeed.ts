@@ -154,8 +154,6 @@ export default class Datafeed {
       const symbolData = await makeApiRequest(`api/v3/exchangeInfo?symbol=${symbolName}`);
       const priceScale = symbolData.symbols[0].baseAssetPrecision;
 
-      console.log("Symbol info:", 1 ** parseFloat(priceScale));
-
       return {
         name: symbolName,
         ticker: symbolName,
@@ -178,8 +176,6 @@ export default class Datafeed {
       };
     };
     const symbol = await symbolInfo();
-    console.log("Resolve requested for:", symbol);
-
     onSymbolResolvedCallback(symbol);
   };
 
@@ -227,15 +223,21 @@ export default class Datafeed {
       let bars: Bar[] = [];
       data.forEach((bar: any) => {
         if (bar[0] >= from * 1000 && bar[0] < to * 1000) {
+          // Binance returns string values; convert to numbers so the library can compute volume
+          const open = parseFloat(bar[1]);
+          const high = parseFloat(bar[2]);
+          const low = parseFloat(bar[3]);
+          const close = parseFloat(bar[4]);
+          const volume = parseFloat(bar[5]);
           bars = [
             ...bars,
             {
               time: bar[0],
-              low: bar[3],
-              high: bar[2],
-              open: bar[1],
-              close: bar[4],
-              volume: bar[5],
+              low,
+              high,
+              open,
+              close,
+              volume,
             },
           ];
         }

@@ -47,11 +47,12 @@ function setupSockets(subRequest) {
     }
     const bar = {
       time: startTime,
-      open: open,
-      high: high,
-      low: low,
-      close: close,
-      volume: volume,
+      // Binance stream payload kline fields are strings; convert to numbers
+      open: parseFloat(open),
+      high: parseFloat(high),
+      low: parseFloat(low),
+      close: parseFloat(close),
+      volume: parseFloat(volume),
     };
     // send data to every subscriber of that symbol
     subscriptionItem.handlers.forEach((handler) => handler.callback(bar));
