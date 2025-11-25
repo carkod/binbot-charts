@@ -9,7 +9,17 @@ interface StreamingConfig {
   exchange: string;
 }
 
-function setupSockets(subRequest, config: StreamingConfig) {
+interface SubscriptionRequest {
+  method?: string;
+  params?: string[];
+  id?: number;
+  type?: string;
+  topic?: string;
+  privateChannel?: boolean;
+  response?: boolean;
+}
+
+function setupSockets(subRequest: SubscriptionRequest, config: StreamingConfig) {
   const socket: WebSocket = new WebSocket(config.wsUrl);
   window.socket = socket;
   socket.onopen = (event) => {
@@ -79,14 +89,25 @@ function parseKuCoinMessage(data: any) {
     return;
   }
   
-  const candles = data.data.candles;
-  if (!candles || !Array.isArray(candles) || candles.length === 0) {
+  const candlesData = data.data.candles;
+  if (!candlesData) {
+    return;
+  }
+  
+  // KuCoin candle format: single string "time,open,close,high,low,volume,turnover"
+  // or array format depending on the endpoint
+  let candleArray: string[];
+  if (typeof candlesData === 'string') {
+    candleArray = candlesData.split(',');
+  } else if (Array.isArray(candlesData)) {
+    // If it's already an array, use it directly
+    candleArray = candlesData;
+  } else {
     return;
   }
   
   // KuCoin candle format: [time, open, close, high, low, volume, turnover]
-  // Using the first candle from the array
-  const [timestamp, open, close, high, low, volume] = candles;
+  const [timestamp, open, close, high, low, volume] = candleArray;
   
   const channelString = data.topic; // KuCoin uses topic for channel identification
   const subscriptionItem = channelToSubscription.get(channelString);
