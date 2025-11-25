@@ -79,13 +79,14 @@ function parseKuCoinMessage(data: any) {
     return;
   }
   
-  const candle = data.data.candles;
-  if (!candle) {
+  const candles = data.data.candles;
+  if (!candles || !Array.isArray(candles) || candles.length === 0) {
     return;
   }
   
-  // KuCoin candle format: [timestamp, open, close, high, low, volume, turnover]
-  const [timestamp, open, close, high, low, volume] = candle;
+  // KuCoin candle format: [time, open, close, high, low, volume, turnover]
+  // Using the first candle from the array
+  const [timestamp, open, close, high, low, volume] = candles;
   
   const channelString = data.topic; // KuCoin uses topic for channel identification
   const subscriptionItem = channelToSubscription.get(channelString);
