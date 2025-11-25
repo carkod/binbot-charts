@@ -4,8 +4,13 @@ declare global {
   interface Window { socket: WebSocket; }
 }
 
-function setupSockets(subRequest) {
-  const socket: WebSocket = new WebSocket("wss://stream.binance.com:9443/ws");
+interface StreamingConfig {
+  wsUrl: string;
+  exchange: string;
+}
+
+function setupSockets(subRequest, config: StreamingConfig) {
+  const socket: WebSocket = new WebSocket(config.wsUrl);
   window.socket = socket;
   socket.onopen = (event) => {
     console.log("[socket] Connected");
@@ -22,40 +27,83 @@ function setupSockets(subRequest) {
 
   socket.onmessage = (e) => {
     const data = JSON.parse(e.data);
-    if (data.e == undefined) {
-      // skip all non-TRADE events
-      return;
+    
+    // Parse based on exchange
+    if (config.exchange === "Binance") {
+      parseBinanceMessage(data);
+    } else if (config.exchange === "KuCoin") {
+      parseKuCoinMessage(data);
     }
-    const {
-      s: symbol,
-      t: startTime,
-      T: closeTime,
-      i: interval,
-      o: open,
-      c: close,
-      h: high,
-      l: low,
-      v: volume,
-      n: trades,
-      q: quoteVolume,
-    } = data.k;
-
-    const channelString = `${symbol.toLowerCase()}@kline_${interval}`;
-    const subscriptionItem = channelToSubscription.get(channelString);
-    if (subscriptionItem === undefined) {
-      return;
-    }
-    const bar = {
-      time: startTime,
-      open: open,
-      high: high,
-      low: low,
-      close: close,
-      volume: volume,
-    };
-    // send data to every subscriber of that symbol
-    subscriptionItem.handlers.forEach((handler) => handler.callback(bar));
   };
+}
+
+function parseBinanceMessage(data: any) {
+  if (data.e == undefined) {
+    // skip all non-TRADE events
+    return;
+  }
+  const {
+    s: symbol,
+    t: startTime,
+    T: closeTime,
+    i: interval,
+    o: open,
+    c: close,
+    h: high,
+    l: low,
+    v: volume,
+    n: trades,
+    q: quoteVolume,
+  } = data.k;
+
+  const channelString = `${symbol.toLowerCase()}@kline_${interval}`;
+  const subscriptionItem = channelToSubscription.get(channelString);
+  if (subscriptionItem === undefined) {
+    return;
+  }
+  const bar = {
+    time: startTime,
+    open: open,
+    high: high,
+    low: low,
+    close: close,
+    volume: volume,
+  };
+  // send data to every subscriber of that symbol
+  subscriptionItem.handlers.forEach((handler) => handler.callback(bar));
+}
+
+function parseKuCoinMessage(data: any) {
+  // KuCoin WebSocket message structure
+  if (data.type !== "message" || !data.data) {
+    return;
+  }
+  
+  const candle = data.data.candles;
+  if (!candle) {
+    return;
+  }
+  
+  // KuCoin candle format: [timestamp, open, close, high, low, volume, turnover]
+  const [timestamp, open, close, high, low, volume] = candle;
+  
+  const channelString = data.topic; // KuCoin uses topic for channel identification
+  const subscriptionItem = channelToSubscription.get(channelString);
+  if (subscriptionItem === undefined) {
+    return;
+  }
+  
+  const bar = {
+    time: parseInt(timestamp) * 1000, // KuCoin uses seconds, convert to milliseconds
+    open: parseFloat(open),
+    high: parseFloat(high),
+    low: parseFloat(low),
+    close: parseFloat(close),
+    volume: parseFloat(volume),
+  };
+  
+  // send data to every subscriber of that symbol
+  subscriptionItem.handlers.forEach((handler) => handler.callback(bar));
 }
 
 export function subscribeOnStream(
@@ -64,9 +112,14 @@ export function subscribeOnStream(
   onRealtimeCallback,
   subscribeUID,
   onResetCacheNeededCallback,
-  interval
+  interval,
+  wsUrl: string,
+  exchange: string = "Binance"
 ) {
-  const channelString = `${symbolInfo.name.toLowerCase()}@kline_${interval}`;
+  const channelString = exchange === "Binance" 
+    ? `${symbolInfo.name.toLowerCase()}@kline_${interval}`
+    : `/market/candles:${symbolInfo.name}_${interval}`; // KuCoin format
+  
   const handler = {
     id: subscribeUID,
     callback: onRealtimeCallback,
@@ -82,13 +135,23 @@ export function subscribeOnStream(
     resolution,
     handlers: [handler],
   };
-  const subRequest = {
-    method: "SUBSCRIBE",
-    params: [channelString],
-    id: 1,
-  };
+  
+  const subRequest = exchange === "Binance"
+    ? {
+        method: "SUBSCRIBE",
+        params: [channelString],
+        id: 1,
+      }
+    : {
+        id: Date.now(),
+        type: "subscribe",
+        topic: channelString,
+        privateChannel: false,
+        response: true,
+      };
+  
   channelToSubscription.set(channelString, subscriptionItem);
-  setupSockets(subRequest);
+  setupSockets(subRequest, { wsUrl, exchange });
 }
 
 export function unsubscribeFromStream(subscriberUID) {

@@ -6,6 +6,7 @@ import {
   widget,
 } from "./charting_library/";
 import Datafeed from "./datafeed";
+import { ExchangeConfig, SUPPORTED_EXCHANGES } from "./exchanges";
 
 export interface OrderLine extends IOrderLine {
   id: string;
@@ -21,6 +22,8 @@ interface TVChartContainerProps {
   height?: string;
   onTick?: (event: any) => void;
   getLatestBar?: (data: any) => void;
+  exchange?: string; // Exchange name: 'binance' or 'kucoin'
+  supportedExchanges?: string[]; // List of supported exchanges
 }
 
 const TVChartContainer: FC<TVChartContainerProps> = ({
@@ -32,6 +35,8 @@ const TVChartContainer: FC<TVChartContainerProps> = ({
   height = "calc(100vh - 80px)",
   onTick,
   getLatestBar,
+  exchange = "binance",
+  supportedExchanges = ["binance", "kucoin"],
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -64,9 +69,26 @@ const TVChartContainer: FC<TVChartContainerProps> = ({
   }, [orderLines, timescaleMarks]);
 
   const initializeChart = (interval: ResolutionString) => {
+    // Get exchange configuration
+    const exchangeConfig = SUPPORTED_EXCHANGES[exchange.toLowerCase()];
+    if (!exchangeConfig) {
+      console.error(`Exchange ${exchange} not supported`);
+      return;
+    }
+    
+    // Get list of supported exchange configs
+    const supportedExchangeConfigs = supportedExchanges
+      .map(ex => SUPPORTED_EXCHANGES[ex.toLowerCase()])
+      .filter(Boolean);
+    
     const widgetOptions: any = {
       symbol: symbol,
-      datafeed: new Datafeed(timescaleMarks, interval),
+      datafeed: new Datafeed(
+        timescaleMarks, 
+        interval, 
+        exchangeConfig,
+        supportedExchangeConfigs
+      ),
       interval: interval,
       container: containerRef.current,
       library_path: libraryPath,
@@ -148,4 +170,5 @@ const TVChartContainer: FC<TVChartContainerProps> = ({
   return <div ref={containerRef} style={{ height: height }} />;
 };
 
+export { ExchangeConfig, SUPPORTED_EXCHANGES } from "./exchanges";
 export default TVChartContainer;

@@ -1,26 +1,26 @@
 import { useEffect, useRef } from "react";
 
 
-export async function makeApiRequest(path) {
+export async function makeApiRequest(path: string, apiHost: string = "https://api.binance.com") {
   try {
-    const response = await fetch(`https://api.binance.com/${path}`);
+    const response = await fetch(`${apiHost}/${path}`);
     return response.json();
   } catch (error) {
-    throw new Error(`Binance request error: ${error.status}`);
+    throw new Error(`API request error: ${error.status}`);
   }
 }
 
-export async function getAllSymbols(symbol) {
+export async function getAllSymbols(symbol: string, apiHost: string = "https://api.binance.com", exchange: string = "Binance") {
   let newSymbols = [];
   try {
-    const data = await makeApiRequest(`api/v3/exchangeInfo?symbol=${symbol.toUpperCase()}`);
+    const data = await makeApiRequest(`api/v3/exchangeInfo?symbol=${symbol.toUpperCase()}`, apiHost);
     data.symbols.forEach(item => {
       if (item.status === "TRADING") {
         newSymbols.push({
           symbol: item.symbol,
           full_name: `${item.baseAsset}/${item.quoteAsset}`,
           description: `Precision: ${item.quoteAssetPrecision}`,
-          exchange: "Binance",
+          exchange: exchange,
           ticker: item.symbol,
           type: "crypto",
         });

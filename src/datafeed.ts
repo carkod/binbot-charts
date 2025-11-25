@@ -1,5 +1,6 @@
 import { getAllSymbols, makeApiRequest } from "./helpers";
 import { subscribeOnStream, unsubscribeFromStream } from "./streaming";
+import { ExchangeConfig } from "./exchanges";
 
 enum BinanceResolutions {
   one_second = "1s",
@@ -29,7 +30,7 @@ interface ConfigurationData {
   symbols_types: { name: string; value: string }[];
 }
 
-const getConfigurationData = async (): Promise<ConfigurationData> => {
+const getConfigurationData = async (supportedExchanges: ExchangeConfig[]): Promise<ConfigurationData> => {
   return {
     supports_marks: true,
     supports_timescale_marks: true,
@@ -52,13 +53,11 @@ const getConfigurationData = async (): Promise<ConfigurationData> => {
       "1W",
       "12M",
     ],
-    exchanges: [
-      {
-        value: "Binance",
-        name: "Binance",
-        desc: "Binance",
-      },
-    ],
+    exchanges: supportedExchanges.map(exchange => ({
+      value: exchange.value,
+      name: exchange.name,
+      desc: exchange.name,
+    })),
     symbols_types: [
       {
         name: "crypto",
@@ -117,15 +116,24 @@ export default class Datafeed {
   private timescaleMarks: TimescaleMark[];
   private interval: string;
   private configurationData: ConfigurationData | null = null;
+  private exchangeConfig: ExchangeConfig;
+  private supportedExchanges: ExchangeConfig[];
 
-  constructor(timescaleMarks: TimescaleMark[] = [], interval: string = "1h") {
+  constructor(
+    timescaleMarks: TimescaleMark[] = [], 
+    interval: string = "1h",
+    exchangeConfig: ExchangeConfig,
+    supportedExchanges: ExchangeConfig[] = []
+  ) {
     this.streaming = null;
     this.timescaleMarks = timescaleMarks;
     this.interval = interval;
+    this.exchangeConfig = exchangeConfig;
+    this.supportedExchanges = supportedExchanges;
   }
 
   onReady = async (callback: (data: ConfigurationData) => void): Promise<void> => {
-    this.configurationData = await getConfigurationData();
+    this.configurationData = await getConfigurationData(this.supportedExchanges);
     callback(this.configurationData);
   };
 
@@ -135,7 +143,11 @@ export default class Datafeed {
     symbolType: string,
     onResultReadyCallback: (symbols: any[]) => void
   ): Promise<void> => {
-    const symbols = await getAllSymbols(userInput);
+    const symbols = await getAllSymbols(
+      userInput, 
+      this.exchangeConfig.restApiUrl,
+      this.exchangeConfig.name
+    );
     onResultReadyCallback(symbols);
   };
 
@@ -151,7 +163,10 @@ export default class Datafeed {
 
     const symbolInfo = async (): Promise<SymbolInfo> => {
 
-      const symbolData = await makeApiRequest(`api/v3/exchangeInfo?symbol=${symbolName}`);
+      const symbolData = await makeApiRequest(
+        `api/v3/exchangeInfo?symbol=${symbolName}`,
+        this.exchangeConfig.restApiUrl
+      );
       const priceScale = symbolData.symbols[0].baseAssetPrecision;
 
       console.log("Symbol info:", 1 ** parseFloat(priceScale));
@@ -163,7 +178,7 @@ export default class Datafeed {
         type: "crypto",
         session: "24x7",
         timezone: "Etc/UTC",
-        exchange: "Binance",
+        exchange: this.exchangeConfig.name,
         minmov: 1,
         pricescale: 10 ** parseFloat(priceScale),
         has_daily: true,
@@ -214,7 +229,10 @@ export default class Datafeed {
       .join("&");
 
     try {
-      const data = await makeApiRequest(`api/v3/uiKlines?${query}`);
+      const data = await makeApiRequest(
+        `api/v3/uiKlines?${query}`,
+        this.exchangeConfig.restApiUrl
+      );
       if ((data.Response && data.Response === "Error") || data.length === 0) {
         // "noData" should be set if there is no data in the requested period.
         onHistoryCallback([], {
@@ -261,25 +279,33 @@ export default class Datafeed {
   }
 
   async getServerTime(onServertimeCallback: (time: number) => void): Promise<void> {
-    const data = await makeApiRequest(`api/v3/time`);
+    const data = await makeApiRequest(`api/v3/time`, this.exchangeConfig.restApiUrl);
     const serverTime = data.serverTime / 1000;
     onServertimeCallback(serverTime);
   }
 
-  subscribeBars = (
+  subscribeBars = async (
     symbolInfo: SymbolInfo,
     resolution: string,
     onRealtimeCallback: (bar: Bar) => void,
     subscribeUID: string,
     onResetCacheNeededCallback: () => void
-  ): void => {
+  ): Promise<void> => {
+    // Get WebSocket URL (might be dynamic for KuCoin)
+    let wsUrl = this.exchangeConfig.wsUrl;
+    if (this.exchangeConfig.getWsUrl) {
+      wsUrl = await this.exchangeConfig.getWsUrl();
+    }
+    
     subscribeOnStream(
       symbolInfo,
       resolution,
       onRealtimeCallback,
       subscribeUID,
       onResetCacheNeededCallback,
-      this.interval
+      this.interval,
+      wsUrl,
+      this.exchangeConfig.name
     );
   };
 
