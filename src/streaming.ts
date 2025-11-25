@@ -1,3 +1,5 @@
+import { EXCHANGE_BINANCE, EXCHANGE_KUCOIN } from "./exchanges";
+
 const channelToSubscription = new Map();
 
 declare global {
@@ -39,9 +41,9 @@ function setupSockets(subRequest: SubscriptionRequest, config: StreamingConfig) 
     const data = JSON.parse(e.data);
     
     // Parse based on exchange
-    if (config.exchange === "Binance") {
+    if (config.exchange === EXCHANGE_BINANCE) {
       parseBinanceMessage(data);
-    } else if (config.exchange === "KuCoin") {
+    } else if (config.exchange === EXCHANGE_KUCOIN) {
       parseKuCoinMessage(data);
     }
   };
@@ -136,9 +138,9 @@ export function subscribeOnStream(
   onResetCacheNeededCallback,
   interval,
   wsUrl: string,
-  exchange: string = "Binance"
+  exchange: string = EXCHANGE_BINANCE
 ) {
-  const channelString = exchange === "Binance" 
+  const channelString = exchange === EXCHANGE_BINANCE 
     ? `${symbolInfo.name.toLowerCase()}@kline_${interval}`
     : `/market/candles:${symbolInfo.name}_${interval}`; // KuCoin format
   
@@ -158,7 +160,7 @@ export function subscribeOnStream(
     handlers: [handler],
   };
   
-  const subRequest = exchange === "Binance"
+  const subRequest = exchange === EXCHANGE_BINANCE
     ? {
         method: "SUBSCRIBE",
         params: [channelString],

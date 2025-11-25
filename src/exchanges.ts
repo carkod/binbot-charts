@@ -1,3 +1,7 @@
+// Exchange name constants for consistency
+const EXCHANGE_BINANCE = "Binance";
+const EXCHANGE_KUCOIN = "KuCoin";
+
 export interface ExchangeConfig {
   name: string;
   value: string;
@@ -9,14 +13,14 @@ export interface ExchangeConfig {
 
 export const SUPPORTED_EXCHANGES: Record<string, ExchangeConfig> = {
   binance: {
-    name: "Binance",
-    value: "Binance",
+    name: EXCHANGE_BINANCE,
+    value: EXCHANGE_BINANCE,
     restApiUrl: "https://api.binance.com",
     wsUrl: "wss://stream.binance.com:9443/ws",
   },
   kucoin: {
-    name: "KuCoin",
-    value: "KuCoin",
+    name: EXCHANGE_KUCOIN,
+    value: EXCHANGE_KUCOIN,
     restApiUrl: "https://api.kucoin.com",
     wsUrl: "", // Will be fetched dynamically
     getWsUrl: async () => {
@@ -33,3 +37,6 @@ export const SUPPORTED_EXCHANGES: Record<string, ExchangeConfig> = {
 };
 
 export type ExchangeName = keyof typeof SUPPORTED_EXCHANGES;
+
+// Export exchange name constants for use in other modules
+export { EXCHANGE_BINANCE, EXCHANGE_KUCOIN };

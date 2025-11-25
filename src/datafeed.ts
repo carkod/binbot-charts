@@ -169,8 +169,6 @@ export default class Datafeed {
       );
       const priceScale = symbolData.symbols[0].baseAssetPrecision;
 
-      console.log("Symbol info:", 1 ** parseFloat(priceScale));
-
       return {
         name: symbolName,
         ticker: symbolName,
@@ -284,29 +282,39 @@ export default class Datafeed {
     onServertimeCallback(serverTime);
   }
 
-  subscribeBars = async (
+  subscribeBars = (
     symbolInfo: SymbolInfo,
     resolution: string,
     onRealtimeCallback: (bar: Bar) => void,
     subscribeUID: string,
     onResetCacheNeededCallback: () => void
-  ): Promise<void> => {
+  ): void => {
     // Get WebSocket URL (might be dynamic for KuCoin)
-    let wsUrl = this.exchangeConfig.wsUrl;
-    if (this.exchangeConfig.getWsUrl) {
-      wsUrl = await this.exchangeConfig.getWsUrl();
-    }
+    const connectWebSocket = async () => {
+      let wsUrl = this.exchangeConfig.wsUrl;
+      if (this.exchangeConfig.getWsUrl) {
+        try {
+          wsUrl = await this.exchangeConfig.getWsUrl();
+        } catch (error) {
+          console.error("Failed to get WebSocket URL:", error);
+          return;
+        }
+      }
+      
+      subscribeOnStream(
+        symbolInfo,
+        resolution,
+        onRealtimeCallback,
+        subscribeUID,
+        onResetCacheNeededCallback,
+        this.interval,
+        wsUrl,
+        this.exchangeConfig.name
+      );
+    };
     
-    subscribeOnStream(
-      symbolInfo,
-      resolution,
-      onRealtimeCallback,
-      subscribeUID,
-      onResetCacheNeededCallback,
-      this.interval,
-      wsUrl,
-      this.exchangeConfig.name
-    );
+    // Execute connection asynchronously
+    connectWebSocket();
   };
 
   unsubscribeBars = (subscriberUID: string): void => {
