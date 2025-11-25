@@ -158,6 +158,7 @@ export function subscribeOnStream(
     subscribeUID,
     resolution,
     handlers: [handler],
+    exchange, // Store exchange for unsubscribe
   };
   
   const subRequest = exchange === EXCHANGE_BINANCE
@@ -196,12 +197,25 @@ export function unsubscribeFromStream(subscriberUID) {
           "[unsubscribeBars]: Unsubscribe from streaming. Channel:",
           channelString
         );
-        const subRequest = {
-          method: "UNSUBSCRIBE",
-          params: [channelString],
-          id: 1,
-        };
-        window.socket.send(JSON.stringify(subRequest));
+        
+        // Use exchange-specific unsubscribe format
+        const subRequest = subscriptionItem.exchange === EXCHANGE_BINANCE
+          ? {
+              method: "UNSUBSCRIBE",
+              params: [channelString],
+              id: 1,
+            }
+          : {
+              id: Date.now(),
+              type: "unsubscribe",
+              topic: channelString,
+              privateChannel: false,
+              response: true,
+            };
+        
+        if (window.socket && window.socket.readyState === WebSocket.OPEN) {
+          window.socket.send(JSON.stringify(subRequest));
+        }
         channelToSubscription.delete(channelString);
         window.socket = undefined;
         break;

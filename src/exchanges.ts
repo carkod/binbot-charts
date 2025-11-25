@@ -25,13 +25,27 @@ export const SUPPORTED_EXCHANGES: Record<string, ExchangeConfig> = {
     wsUrl: "", // Will be fetched dynamically
     getWsUrl: async () => {
       // KuCoin requires getting a token first
-      const response = await fetch("https://api.kucoin.com/api/v1/bullet-public");
-      const data = await response.json();
-      if (data.code === "200000" && data.data?.instanceServers?.length > 0) {
-        const server = data.data.instanceServers[0];
-        return `${server.endpoint}?token=${data.data.token}`;
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        
+        const response = await fetch("https://api.kucoin.com/api/v1/bullet-public", {
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        
+        const data = await response.json();
+        if (data.code === "200000" && data.data?.instanceServers?.length > 0) {
+          const server = data.data.instanceServers[0];
+          return `${server.endpoint}?token=${data.data.token}`;
+        }
+        throw new Error("Failed to get KuCoin WebSocket URL: Invalid response");
+      } catch (error) {
+        if (error.name === 'AbortError') {
+          throw new Error("Failed to get KuCoin WebSocket URL: Request timeout");
+        }
+        throw new Error(`Failed to get KuCoin WebSocket URL: ${error.message}`);
       }
-      throw new Error("Failed to get KuCoin WebSocket URL");
     },
   },
 };
