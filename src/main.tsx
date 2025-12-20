@@ -44,10 +44,20 @@ const TVChartContainer: FC<TVChartContainerProps> = ({
   const [widgetState, setWidgetState] = useImmer<any>(null);
   const [symbolState] = useState<string | null>(null);
   const prevTimescaleMarks = useRef<any[]>(timescaleMarks);
+  const prevExchange = useRef<string>(exchange);
 
   useEffect(() => {
     if (!widgetState) {
       initializeChart(interval);
+      prevExchange.current = exchange;
+    }
+
+    // Reinitialize chart if exchange changes
+    if (widgetState && exchange !== prevExchange.current) {
+      widgetState.remove();
+      setWidgetState(null);
+      prevExchange.current = exchange;
+      // Will reinitialize on next render
     }
 
     if (orderLines && orderLines.length > 0) {
@@ -66,7 +76,7 @@ const TVChartContainer: FC<TVChartContainerProps> = ({
       widgetState._options.datafeed.timescaleMarks = timescaleMarks;
       prevTimescaleMarks.current = timescaleMarks;
     }
-  }, [orderLines, timescaleMarks]);
+  }, [orderLines, timescaleMarks, exchange]);
 
   const initializeChart = (interval: ResolutionString) => {
     // Get exchange configuration
@@ -170,5 +180,6 @@ const TVChartContainer: FC<TVChartContainerProps> = ({
   return <div ref={containerRef} style={{ height: height }} />;
 };
 
-export { ExchangeConfig, SUPPORTED_EXCHANGES } from "./exchanges";
+export { SUPPORTED_EXCHANGES } from "./exchanges";
+export type { ExchangeConfig } from "./exchanges";
 export default TVChartContainer;

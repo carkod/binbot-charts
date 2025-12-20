@@ -69,12 +69,24 @@ export const App: FC<{}> = (): JSX.Element => {
     if (e.target.name === "symbol") {
       setSymbolState(e.target.value);
     } else if (e.target.name === "exchange") {
-      setExchangeState(e.target.value);
+      const newExchange = e.target.value;
+      setExchangeState(newExchange);
+      
+      // Convert symbol format when switching exchanges
+      if (newExchange === "kucoin" && !symbolState.includes("-")) {
+        // Convert BTCUSDT -> BTC-USDT for KuCoin
+        const converted = symbolState.replace(/USDT$/, "-USDT");
+        setSymbolState(converted);
+      } else if (newExchange === "binance" && symbolState.includes("-")) {
+        // Convert BTC-USDT -> BTCUSDT for Binance
+        const converted = symbolState.replace("-", "");
+        setSymbolState(converted);
+      }
     }
   };
   return (
     <>
-      <h1 style={{ textAlign: "center" }}>Test chart - Multi-Exchange Support</h1>
+      <h1 style={{ textAlign: "center" }}>Test chart</h1>
       <div style={{ padding: "10px", textAlign: "center" }}>
         <label htmlFor="exchange" style={{ marginRight: "10px" }}>Exchange:</label>
         <select name="exchange" onChange={handleChange} value={exchangeState} style={{ marginRight: "20px" }}>
