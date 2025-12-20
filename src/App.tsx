@@ -12,7 +12,8 @@ type TimeMarks = Immutable<ITimescaleMarks>;
 export const App: FC<{}> = (): JSX.Element => {
   const [currentPrice, setCurrentPrice] = useState(null);
   const [orderLines, setOrderLines] = useImmer<OrderLine[]>([]);
-  const [symbolState, setSymbolState] = useState("QTUMBTC");
+  const [symbolState, setSymbolState] = useState("BTCUSDT");
+  const [exchangeState, setExchangeState] = useState("binance");
   const [testTimeMarks, setTestTimeMarks] = useState<Array<TimeMarks>>([]);
 
   useEffect(() => {
@@ -67,13 +68,22 @@ export const App: FC<{}> = (): JSX.Element => {
   const handleChange = (e) => {
     if (e.target.name === "symbol") {
       setSymbolState(e.target.value);
+    } else if (e.target.name === "exchange") {
+      setExchangeState(e.target.value);
     }
   };
   return (
     <>
-      <h1 style={{ textAlign: "center" }}>Test chart</h1>
-      <label htmlFor="symbol">Type symbol</label>
-      <input name="symbol" type="text" onChange={handleChange} />
+      <h1 style={{ textAlign: "center" }}>Test chart - Multi-Exchange Support</h1>
+      <div style={{ padding: "10px", textAlign: "center" }}>
+        <label htmlFor="exchange" style={{ marginRight: "10px" }}>Exchange:</label>
+        <select name="exchange" onChange={handleChange} value={exchangeState} style={{ marginRight: "20px" }}>
+          <option value="binance">Binance</option>
+          <option value="kucoin">KuCoin</option>
+        </select>
+        <label htmlFor="symbol" style={{ marginRight: "10px" }}>Type symbol:</label>
+        <input name="symbol" type="text" onChange={handleChange} value={symbolState} />
+      </div>
       <TVChartContainer
         symbol={symbolState}
         interval={"1h" as ResolutionString}
@@ -81,6 +91,8 @@ export const App: FC<{}> = (): JSX.Element => {
         orderLines={orderLines}
         onTick={handleTick}
         getLatestBar={getLatestBar}
+        exchange={exchangeState}
+        supportedExchanges={["binance", "kucoin"]}
       />
     </>
   );
