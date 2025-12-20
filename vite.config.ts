@@ -8,6 +8,20 @@ export default defineConfig({
   root: ".",
   publicDir: "public",
   server: {
-    port: 3000,
+    port: 3001,
+    proxy: {
+      "/binance": {
+        target: "https://api.binance.com",
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => path.replace(/^\/binance/, ""),
+      },
+      "/kucoin": {
+        target: "https://api.kucoin.com",
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => path.replace(/^\/kucoin/, ""),
+      },
+    },
   },
 });

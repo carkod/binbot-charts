@@ -6,14 +6,15 @@ import TVChartContainer, { OrderLine } from "./main";
 import { ResolutionString } from "./charting_library/charting_library";
 import { ITimescaleMarks } from "./charting-library-interfaces";
 import { roundTime } from "./helpers";
+import { Exchange } from "./exchanges";
 
 type TimeMarks = Immutable<ITimescaleMarks>;
 
 export const App: FC<{}> = (): JSX.Element => {
   const [currentPrice, setCurrentPrice] = useState(null);
   const [orderLines, setOrderLines] = useImmer<OrderLine[]>([]);
-  const [symbolState, setSymbolState] = useState("BTCUSDT");
-  const [exchangeState, setExchangeState] = useState("binance");
+  const [symbolState, setSymbolState] = useState("SUPER-USDT");
+  const [exchangeState, setExchangeState] = useState<Exchange>(Exchange.KUCOIN);
   const [testTimeMarks, setTestTimeMarks] = useState<Array<TimeMarks>>([]);
 
   useEffect(() => {
@@ -69,19 +70,7 @@ export const App: FC<{}> = (): JSX.Element => {
     if (e.target.name === "symbol") {
       setSymbolState(e.target.value);
     } else if (e.target.name === "exchange") {
-      const newExchange = e.target.value;
-      setExchangeState(newExchange);
-      
-      // Convert symbol format when switching exchanges
-      if (newExchange === "kucoin" && !symbolState.includes("-")) {
-        // Convert BTCUSDT -> BTC-USDT for KuCoin
-        const converted = symbolState.replace(/USDT$/, "-USDT");
-        setSymbolState(converted);
-      } else if (newExchange === "binance" && symbolState.includes("-")) {
-        // Convert BTC-USDT -> BTCUSDT for Binance
-        const converted = symbolState.replace("-", "");
-        setSymbolState(converted);
-      }
+      setExchangeState(e.target.value as Exchange);
     }
   };
   return (
@@ -90,8 +79,8 @@ export const App: FC<{}> = (): JSX.Element => {
       <div style={{ padding: "10px", textAlign: "center" }}>
         <label htmlFor="exchange" style={{ marginRight: "10px" }}>Exchange:</label>
         <select name="exchange" onChange={handleChange} value={exchangeState} style={{ marginRight: "20px" }}>
-          <option value="binance">Binance</option>
-          <option value="kucoin">KuCoin</option>
+          <option value={Exchange.BINANCE}>Binance</option>
+          <option value={Exchange.KUCOIN}>KuCoin</option>
         </select>
         <label htmlFor="symbol" style={{ marginRight: "10px" }}>Type symbol:</label>
         <input name="symbol" type="text" onChange={handleChange} value={symbolState} />
@@ -104,7 +93,7 @@ export const App: FC<{}> = (): JSX.Element => {
         onTick={handleTick}
         getLatestBar={getLatestBar}
         exchange={exchangeState}
-        supportedExchanges={["binance", "kucoin"]}
+        supportedExchanges={[Exchange.BINANCE, Exchange.KUCOIN]}
       />
     </>
   );
