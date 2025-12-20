@@ -1,12 +1,30 @@
 import { useEffect, useRef } from "react";
 
 
-export async function makeApiRequest(path: string, apiHost: string = "https://api.binance.com") {
+function resolveApiBase(apiHost: string): string {
+  // In browser during development, route through Vite proxy to avoid CORS
+  if (typeof window !== "undefined") {
+    if (apiHost.includes("api.binance.com")) return "/binance";
+    if (apiHost.includes("api.kucoin.com")) return "/kucoin";
+  }
+  return apiHost.replace(/\/$/, "");
+}
+
+export async function makeApiRequest(
+  path: string,
+  apiHost: string = "https://api.binance.com",
+  init?: RequestInit
+) {
   try {
-    const response = await fetch(`${apiHost}/${path}`);
+    const base = resolveApiBase(apiHost);
+    const url = `${base}/${path.replace(/^\//, "")}`;
+    const response = await fetch(url, init);
+    if (!response.ok) {
+      throw new Error(`${response.status} ${response.statusText}`);
+    }
     return response.json();
-  } catch (error) {
-    throw new Error(`API request error: ${error.status}`);
+  } catch (error: any) {
+    throw new Error(`API request error: ${error?.message || String(error)}`);
   }
 }
 

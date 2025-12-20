@@ -3,6 +3,7 @@
     "disableSizeLimit": true,
     "declaration": true,
     "target": "es2016",                                  /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */
+    "module": "ESNext",                                  /* Specify what module code is generated. */
     // "lib": [],                                        /* Specify a set of bundled library declaration files that describe the target runtime environment. */
     "jsx": "react-jsx",
     // "experimentalDecorators": true,                   /* Enable experimental support for TC39 stage 2 draft decorators. */

@@ -1,4 +1,5 @@
 import { getAllSymbols, makeApiRequest } from "./helpers";
+import { getExchangeAdapter, type ExchangeAdapter, type NormalizedCandle } from "./exchangeAdapters";
 import { subscribeOnStream, unsubscribeFromStream } from "./streaming";
 import { ExchangeConfig } from "./exchanges";
 
@@ -118,6 +119,7 @@ export default class Datafeed {
   private configurationData: ConfigurationData | null = null;
   private exchangeConfig: ExchangeConfig;
   private supportedExchanges: ExchangeConfig[];
+  private adapter: ExchangeAdapter;
 
   constructor(
     timescaleMarks: TimescaleMark[] = [], 
@@ -130,6 +132,7 @@ export default class Datafeed {
     this.interval = interval;
     this.exchangeConfig = exchangeConfig;
     this.supportedExchanges = supportedExchanges;
+    this.adapter = getExchangeAdapter(this.exchangeConfig.name);
   }
 
   onReady = async (callback: (data: ConfigurationData) => void): Promise<void> => {
@@ -162,12 +165,8 @@ export default class Datafeed {
     }
 
     const symbolInfo = async (): Promise<SymbolInfo> => {
-
-      const symbolData = await makeApiRequest(
-        `api/v3/exchangeInfo?symbol=${symbolName}`,
-        this.exchangeConfig.restApiUrl
-      );
-      const priceScale = symbolData.symbols[0].baseAssetPrecision;
+      const meta = await this.adapter.fetchSymbolMeta(symbolName, this.exchangeConfig.restApiUrl);
+      const priceScale = meta.priceScale ?? 8;
 
       return {
         name: symbolName,
@@ -178,7 +177,7 @@ export default class Datafeed {
         timezone: "Etc/UTC",
         exchange: this.exchangeConfig.name,
         minmov: 1,
-        pricescale: 10 ** parseFloat(priceScale),
+        pricescale: Math.pow(10, priceScale),
         has_daily: true,
         has_intraday: true,
         has_no_volume: false,
@@ -203,6 +202,7 @@ export default class Datafeed {
   ): Promise<void> => {
     const { from, to, firstDataRequest } = periodParams;
     let interval = "60"; // 1 hour
+    
     // Calculate interval using resolution data
     if (!/[a-zA-Z]$/.test(resolution)) {
       if (parseInt(resolution) >= 60) {
@@ -214,32 +214,19 @@ export default class Datafeed {
       interval = resolution.toLowerCase().replace(/[a-z]\b/g, (c) => c.toLowerCase());
     }
 
-    let urlParameters = {
-      symbol: symbolInfo.name,
-      interval: interval,
-      startTime: Math.abs(from * 1000),
-      endTime: Math.abs(to * 1000),
-      limit: 600,
-    };
-
-    const query = Object.keys(urlParameters)
-      .map((name) => `${name}=${encodeURIComponent(urlParameters[name])}`)
-      .join("&");
-
     try {
-      const data = await makeApiRequest(
-        `api/v3/uiKlines?${query}`,
+      const data: NormalizedCandle[] = await this.adapter.fetchBars(
+        { symbol: symbolInfo.name, interval, from, to },
         this.exchangeConfig.restApiUrl
       );
-      if ((data.Response && data.Response === "Error") || data.length === 0) {
-        // "noData" should be set if there is no data in the requested period.
-        onHistoryCallback([], {
-          noData: true,
-        });
+
+      if (!Array.isArray(data) || data.length === 0) {
+        onHistoryCallback([], { noData: true });
         return;
       }
+      
       let bars: Bar[] = [];
-      data.forEach((bar: any) => {
+      data.forEach((bar) => {
         if (bar[0] >= from * 1000 && bar[0] < to * 1000) {
           bars = [
             ...bars,
@@ -254,9 +241,7 @@ export default class Datafeed {
           ];
         }
       });
-      onHistoryCallback(bars, {
-        noData: false,
-      });
+      onHistoryCallback(bars, { noData: false });
     } catch (error) {
       console.log("[getBars]: Get error", error);
       onErrorCallback(error);
@@ -277,8 +262,7 @@ export default class Datafeed {
   }
 
   async getServerTime(onServertimeCallback: (time: number) => void): Promise<void> {
-    const data = await makeApiRequest(`api/v3/time`, this.exchangeConfig.restApiUrl);
-    const serverTime = data.serverTime / 1000;
+    const serverTime = await this.adapter.fetchServerTime(this.exchangeConfig.restApiUrl);
     onServertimeCallback(serverTime);
   }
 

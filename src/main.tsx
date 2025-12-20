@@ -27,7 +27,7 @@ interface TVChartContainerProps {
 }
 
 const TVChartContainer: FC<TVChartContainerProps> = ({
-  symbol = "BTCUSDT",
+  symbol = "SUPER-USDT",
   interval = "1h" as ResolutionString,
   libraryPath = "/charting_library/",
   timescaleMarks = [],
@@ -35,19 +35,32 @@ const TVChartContainer: FC<TVChartContainerProps> = ({
   height = "calc(100vh - 80px)",
   onTick,
   getLatestBar,
-  exchange = "binance",
-  supportedExchanges = ["binance", "kucoin"],
+  exchange = "kucoin",
+  supportedExchanges = ["kucoin", "binance"],
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   const [chartOrderLines, setChartOrderLines] = useImmer<any[]>([]);
   const [widgetState, setWidgetState] = useImmer<any>(null);
-  const [symbolState] = useState<string | null>(null);
+  const [symbolState, setSymbolState] = useState<string | null>(symbol);
   const prevTimescaleMarks = useRef<any[]>(timescaleMarks);
+  const prevExchange = useRef<string>(exchange);
 
   useEffect(() => {
     if (!widgetState) {
       initializeChart(interval);
+      prevExchange.current = exchange;
+      setSymbolState(symbol);
+      return;
+    }
+
+    // Reinitialize chart if exchange changes
+    if (widgetState && exchange !== prevExchange.current) {
+      widgetState.remove();
+      setWidgetState(null);
+      prevExchange.current = exchange;
+      // Will reinitialize on next render
+      return;
     }
 
     if (orderLines && orderLines.length > 0) {
@@ -55,7 +68,12 @@ const TVChartContainer: FC<TVChartContainerProps> = ({
     }
 
     if (widgetState && symbol !== symbolState) {
-      widgetState.setSymbol(symbol, interval);
+      try {
+        widgetState.setSymbol(symbol, interval);
+        setSymbolState(symbol);
+      } catch (error) {
+        console.error("Failed to set symbol:", error);
+      }
     }
 
     if (
@@ -66,7 +84,7 @@ const TVChartContainer: FC<TVChartContainerProps> = ({
       widgetState._options.datafeed.timescaleMarks = timescaleMarks;
       prevTimescaleMarks.current = timescaleMarks;
     }
-  }, [orderLines, timescaleMarks]);
+  }, [orderLines, timescaleMarks, exchange]);
 
   const initializeChart = (interval: ResolutionString) => {
     // Get exchange configuration
@@ -108,16 +126,26 @@ const TVChartContainer: FC<TVChartContainerProps> = ({
       tvWidget.subscribe("onTick", (event: any) => onTick && onTick(event));
       setWidgetState(tvWidget);
 
-      // get latest bar for last price
+      // get latest bar for last price, guard against null/empty
       const prices = async () => {
-        const data = await tvWidget.activeChart().exportData({
-          includeTime: false,
-          includeSeries: true,
-          includedStudies: [],
-        });
-        getLatestBar && getLatestBar(data.data[data.data.length - 1]);
+        try {
+          const chart = tvWidget.activeChart?.();
+          if (!chart) return;
+          const data = await chart.exportData({
+            includeTime: false,
+            includeSeries: true,
+            includedStudies: [],
+          });
+          const last = data?.data && data.data.length > 0 ? data.data[data.data.length - 1] : null;
+          if (last && getLatestBar) {
+            getLatestBar(last);
+          }
+        } catch (e) {
+          // exportData may throw if series not ready yet; ignore
+        }
       };
-      prices();
+      // slight defer to let series attach
+      setTimeout(prices, 300);
     });
   };
 
@@ -170,5 +198,6 @@ const TVChartContainer: FC<TVChartContainerProps> = ({
   return <div ref={containerRef} style={{ height: height }} />;
 };
 
-export { ExchangeConfig, SUPPORTED_EXCHANGES } from "./exchanges";
+export { SUPPORTED_EXCHANGES, Exchange } from "./exchanges";
+export type { ExchangeConfig } from "./exchanges";
 export default TVChartContainer;

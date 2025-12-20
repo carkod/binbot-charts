@@ -1,3 +1,9 @@
+// Exchange enum for type-safe exchange selection
+export enum Exchange {
+  BINANCE = "binance",
+  KUCOIN = "kucoin",
+}
+
 // Exchange name constants for consistency
 const EXCHANGE_BINANCE = "Binance";
 const EXCHANGE_KUCOIN = "KuCoin";
@@ -10,6 +16,8 @@ export interface ExchangeConfig {
   // KuCoin requires dynamic WebSocket URL, so this can be a function
   getWsUrl?: () => Promise<string>;
 }
+
+import { makeApiRequest } from "./helpers";
 
 export const SUPPORTED_EXCHANGES: Record<string, ExchangeConfig> = {
   binance: {
@@ -24,27 +32,20 @@ export const SUPPORTED_EXCHANGES: Record<string, ExchangeConfig> = {
     restApiUrl: "https://api.kucoin.com",
     wsUrl: "", // Will be fetched dynamically
     getWsUrl: async () => {
-      // KuCoin requires getting a token first
+      // KuCoin requires POST to bullet-public; use proxy via makeApiRequest
       try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-        
-        const response = await fetch("https://api.kucoin.com/api/v1/bullet-public", {
-          signal: controller.signal,
-        });
-        clearTimeout(timeoutId);
-        
-        const data = await response.json();
+        const data = await makeApiRequest(
+          "api/v1/bullet-public",
+          "https://api.kucoin.com",
+          { method: "POST" }
+        );
         if (data.code === "200000" && data.data?.instanceServers?.length > 0) {
           const server = data.data.instanceServers[0];
           return `${server.endpoint}?token=${data.data.token}`;
         }
         throw new Error("Failed to get KuCoin WebSocket URL: Invalid response");
-      } catch (error) {
-        if (error.name === 'AbortError') {
-          throw new Error("Failed to get KuCoin WebSocket URL: Request timeout");
-        }
-        throw new Error(`Failed to get KuCoin WebSocket URL: ${error.message}`);
+      } catch (error: any) {
+        throw new Error(`Failed to get KuCoin WebSocket URL: ${error?.message || String(error)}`);
       }
     },
   },
