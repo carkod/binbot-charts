@@ -1,5 +1,5 @@
 {
-  "version": "0.10.8",
+  "version": "0.11.0",
   "name": "binbot-charts",
   "type": "module",
   "description": "Binbot charts is the default candlestick bars chart used in terminal.binbot.in to render bots graphically.",
@@ -15,22 +15,28 @@
     "react-dom": ">=18"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.2.0",
+    "@testing-library/react": "^14.1.2",
     "@types/node": "^22.7.5",
     "@types/react": "^18.0.26",
     "@types/react-dom": "^18.0.10",
     "@vitejs/plugin-react": "^4.3.4",
+    "happy-dom": "^20.0.11",
     "immer": "^9.0.17",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "serve": "^14.2.4",
     "tsup": "^8.3.0",
     "typescript": "^4.9.5",
-    "vite": "^5.4.11"
+    "vite": "^5.4.11",
+    "vitest": "^3.2.4"
   },
   "scripts": {
     "dev": "vite",
     "start": "vite",
     "build": "rm -rf dist && tsup --config tsup.config.ts --env.NODE_ENV production",
+    "test": "vitest run --environment=happy-dom",
+    "lint": "npx eslint .",
     "release:patch": "npm run build && npm version patch && git push && git push --tags",
     "release:minor": "npm run build && npm version minor && git push && git push --tags",
     "release:major": "npm run build && npm version major && git push && git push --tags"
