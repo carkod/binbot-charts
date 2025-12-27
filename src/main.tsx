@@ -43,14 +43,61 @@ const TVChartContainer: FC<TVChartContainerProps> = ({
   const [chartOrderLines, setChartOrderLines] = useImmer<any[]>([]);
   const [widgetState, setWidgetState] = useImmer<any>(null);
   const [symbolState, setSymbolState] = useState<string | null>(symbol);
+  const [transformedSymbol, setTransformedSymbol] = useState<string | null>(null);
+  const [isLoadingSymbol, setIsLoadingSymbol] = useState<boolean>(false);
   const prevTimescaleMarks = useRef<any[]>(timescaleMarks);
   const prevExchange = useRef<string>(exchange);
 
+  // Fetch symbol metadata and transform based on exchange
   useEffect(() => {
+    const fetchSymbolMetadata = async () => {
+      if (!symbol) return;
+      
+      setIsLoadingSymbol(true);
+      try {
+        // Remove any dashes or formatting from input symbol
+        const cleanSymbol = symbol.replace(/-/g, '');
+        const response = await fetch(`https://api.terminal.binbot.in/symbol/${cleanSymbol}`);
+        
+        if (!response.ok) {
+          console.warn(`Failed to fetch symbol metadata for ${cleanSymbol}, using original symbol`);
+          setTransformedSymbol(symbol);
+          return;
+        }
+        
+        const result = await response.json();
+        if (result.data?.base_asset && result.data?.quote_asset) {
+          const { base_asset, quote_asset } = result.data;
+          // KuCoin uses dash separator, Binance uses no separator
+          const formatted = exchange.toLowerCase() === 'kucoin'
+            ? `${base_asset}-${quote_asset}`
+            : `${base_asset}${quote_asset}`;
+          setTransformedSymbol(formatted);
+        } else {
+          console.warn('Invalid symbol metadata response, using original symbol');
+          setTransformedSymbol(symbol);
+        }
+      } catch (error) {
+        console.error('Error fetching symbol metadata:', error);
+        setTransformedSymbol(symbol);
+      } finally {
+        setIsLoadingSymbol(false);
+      }
+    };
+    
+    fetchSymbolMetadata();
+  }, [symbol, exchange]);
+
+  useEffect(() => {
+    // Don't initialize until symbol is transformed
+    if (isLoadingSymbol || !transformedSymbol) {
+      return;
+    }
+    
     if (!widgetState) {
       initializeChart(interval);
       prevExchange.current = exchange;
-      setSymbolState(symbol);
+      setSymbolState(transformedSymbol);
       return;
     }
 
@@ -67,10 +114,10 @@ const TVChartContainer: FC<TVChartContainerProps> = ({
       updateOrderLines(orderLines);
     }
 
-    if (widgetState && symbol !== symbolState) {
+    if (widgetState && transformedSymbol !== symbolState) {
       try {
-        widgetState.setSymbol(symbol, interval);
-        setSymbolState(symbol);
+        widgetState.setSymbol(transformedSymbol, interval);
+        setSymbolState(transformedSymbol);
       } catch (error) {
         console.error("Failed to set symbol:", error);
       }
@@ -100,7 +147,7 @@ const TVChartContainer: FC<TVChartContainerProps> = ({
       .filter(Boolean);
     
     const widgetOptions: any = {
-      symbol: symbol,
+      symbol: transformedSymbol || symbol,
       datafeed: new Datafeed(
         timescaleMarks, 
         interval, 

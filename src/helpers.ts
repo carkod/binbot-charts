@@ -2,8 +2,11 @@ import { useEffect, useRef } from "react";
 
 
 function resolveApiBase(apiHost: string): string {
-  // Always use the provided absolute base URL (no dev proxy rewrite)
-  // Ensure no trailing slash
+  // In browser during development, route through Vite proxy to avoid CORS
+  if (typeof window !== "undefined") {
+    if (apiHost.includes("api.binance.com")) return "/binance";
+    if (apiHost.includes("api.kucoin.com")) return "/kucoin";
+  }
   return apiHost.replace(/\/$/, "");
 }
 
