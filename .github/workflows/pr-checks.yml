@@ -1,0 +1,45 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  example-app:
+    name: "Build Example App"
+    description: "Example app helps us debug whether chart component is working isolated from projects that use it"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - run: npm ci
+      - name: Build example app
+        run: npm run build
+
+  test:
+    name: "Run unit tests"
+    description: "Vitest test suite to validate code."
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - run: npm ci
+      - name: Run tests
+        run: npm run test
+
+  lint:
+    name: "Lint Source Code"
+    description: "Checks code style and quality using ESLint."
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - run: npm ci
+      - name: Run linter
+        run: npm run lint
