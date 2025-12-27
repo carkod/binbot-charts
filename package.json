@@ -1,5 +1,5 @@
 {
-  "version": "0.10.0",
+  "version": "0.10.8",
   "name": "binbot-charts",
   "type": "module",
   "description": "Binbot charts is the default candlestick bars chart used in terminal.binbot.in to render bots graphically.",
@@ -35,14 +35,14 @@
     "release:minor": "npm run build && npm version minor && git push && git push --tags",
     "release:major": "npm run build && npm version major && git push && git push --tags"
   },
-  "main": "./dist/main.js",
-  "module": "./dist/main.mjs",
+  "main": "./dist/main.cjs",
+  "module": "./dist/main.js",
   "types": "./dist/main.d.ts",
   "exports": {
     ".": {
       "types": "./dist/main.d.ts",
-      "import": "./dist/main.mjs",
-      "require": "./dist/main.js"
+      "import": "./dist/main.js",
+      "require": "./dist/main.cjs"
     }
   },
   "files": [
