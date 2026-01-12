@@ -131,7 +131,7 @@ const TVChartContainer: FC<TVChartContainerProps> = ({
       widgetState._options.datafeed.timescaleMarks = timescaleMarks;
       prevTimescaleMarks.current = timescaleMarks;
     }
-  }, [orderLines, timescaleMarks, exchange]);
+  }, [orderLines, timescaleMarks, exchange, isLoadingSymbol, transformedSymbol, widgetState, symbolState, interval]);
 
   const initializeChart = (interval: ResolutionString) => {
     // Get exchange configuration
