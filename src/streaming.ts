@@ -1,6 +1,8 @@
 import { EXCHANGE_BINANCE, EXCHANGE_KUCOIN } from "./exchanges";
 
 const channelToSubscription = new Map();
+let pingInterval: number | null = null;
+let reconnectTimeout: number | null = null;
 
 declare global {
   interface Window { socket: WebSocket; }
@@ -24,13 +26,43 @@ interface SubscriptionRequest {
 function setupSockets(subRequest: SubscriptionRequest, config: StreamingConfig) {
   const socket: WebSocket = new WebSocket(config.wsUrl);
   window.socket = socket;
+  
   socket.onopen = (event) => {
     console.log("[socket] Connected");
     socket.send(JSON.stringify(subRequest));
+    
+    // Setup ping interval for KuCoin (every 20 seconds)
+    if (config.exchange === EXCHANGE_KUCOIN) {
+      if (pingInterval) {
+        clearInterval(pingInterval);
+      }
+      pingInterval = window.setInterval(() => {
+        if (socket.readyState === WebSocket.OPEN) {
+          socket.send(JSON.stringify({ id: Date.now(), type: "ping" }));
+        }
+      }, 20000);
+    }
   };
 
   socket.onclose = (reason) => {
     console.log("[socket] Disconnected:", reason);
+    
+    // Clear ping interval
+    if (pingInterval) {
+      clearInterval(pingInterval);
+      pingInterval = null;
+    }
+    
+    // Reconnect after 3 seconds if there are active subscriptions
+    if (channelToSubscription.size > 0) {
+      console.log("[socket] Reconnecting in 3 seconds...");
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+      }
+      reconnectTimeout = window.setTimeout(() => {
+        setupSockets(subRequest, config);
+      }, 3000);
+    }
   };
 
   socket.onerror = (error) => {
@@ -39,6 +71,11 @@ function setupSockets(subRequest: SubscriptionRequest, config: StreamingConfig) 
 
   socket.onmessage = (e) => {
     const data = JSON.parse(e.data);
+    
+    // Handle KuCoin pong response
+    if (data.type === "pong") {
+      return;
+    }
     
     // Parse based on exchange
     if (config.exchange === EXCHANGE_BINANCE) {
@@ -217,7 +254,22 @@ export function unsubscribeFromStream(subscriberUID) {
           window.socket.send(JSON.stringify(subRequest));
         }
         channelToSubscription.delete(channelString);
-        window.socket = undefined;
+        
+        // Clear intervals and close socket if no more subscriptions
+        if (channelToSubscription.size === 0) {
+          if (pingInterval) {
+            clearInterval(pingInterval);
+            pingInterval = null;
+          }
+          if (reconnectTimeout) {
+            clearTimeout(reconnectTimeout);
+            reconnectTimeout = null;
+          }
+          if (window.socket) {
+            window.socket.close();
+            window.socket = undefined;
+          }
+        }
         break;
       }
     }

@@ -33,7 +33,8 @@ const binanceAdapter: ExchangeAdapter = {
       `api/v3/exchangeInfo?symbol=${symbol}`,
       apiHost
     );
-    const priceScale = Number(info.symbols?.[0]?.baseAssetPrecision) || 8;
+    // Use quotePrecision (price precision) instead of baseAssetPrecision
+    const priceScale = Number(info.symbols?.[0]?.quotePrecision) || 8;
     return { priceScale };
   },
   async fetchBars({ symbol, interval, from, to }, apiHost) {
@@ -75,7 +76,8 @@ const kucoinAdapter: ExchangeAdapter = {
     );
     let priceScale = 8;
     if (info?.data && info.data.length > 0) {
-      const incRaw = info.data[0].baseIncrement;
+      // Use priceIncrement (price precision) instead of baseIncrement
+      const incRaw = info.data[0].priceIncrement;
       const incStr = typeof incRaw === "number" ? incRaw.toString() : String(incRaw || "");
       const dot = incStr.indexOf(".");
       priceScale = dot >= 0 ? Math.max(0, incStr.length - dot - 1) : 0;
