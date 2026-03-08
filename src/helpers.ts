@@ -2,7 +2,11 @@ import { useEffect, useRef } from "react";
 
 function resolveApiBase(apiHost: string): string {
   // In browser during development, route through Vite proxy to avoid CORS
-  if (typeof window !== "undefined") {
+  if (
+    typeof window !== "undefined" &&
+    (window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1")
+  ) {
     if (apiHost.includes("api.binance.com")) return "/binance";
     if (apiHost.includes("api-futures.kucoin.com")) return "/kucoin-futures";
     if (apiHost.includes("api.kucoin.com")) return "/kucoin";
