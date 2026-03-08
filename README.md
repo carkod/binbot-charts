@@ -55,8 +55,16 @@ console.log(binanceConfig.restApiUrl); // "https://api.binance.com"
 ## How to start
 
 1. Run `npm install && npm start`. It will build the project and open a default browser with the Charting Library.
-2. `library_path` should be `node_modules/dist/charting_library`
-3. Write a script to copy `charting_library` to `public/charting_library` during build. E.g. `cp -r node_modules/dist/charting_library/ src/public/charting_library`
+2. Run `npm run build` if it's the first time building the library. The example src project will use the final build.
+> `library_path` should be `node_modules/dist/charting_library`
+> Write a script to copy `charting_library` to `public/charting_library` during build. E.g. `cp -r node_modules/dist/charting_library/ src/public/charting_library`
+3. Run `npm run format` and `npm run test` before pushing to the PR to avoid failed Github checks
+4. To publish:
+  - Make your changes and do the usual `git commit` but do not `git push`
+  - you need to run `npm run release-patch`. This follows semver, so you have a few other options, see package.json for more.
+  - The release command will push your commit changes
+  - If you don't do it this way, it'll fail the release process
+
 
 ## About This Project
 
