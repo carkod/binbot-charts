@@ -8,17 +8,23 @@ export type NormalizedCandle = [
   number, // high
   number, // low
   number, // close
-  number // volume
+  number, // volume
 ];
 
 export interface ExchangeAdapter {
-  fetchSymbolMeta(symbol: string, apiHost: string): Promise<{ priceScale: number }>;
-  fetchBars(params: {
-    symbol: string;
-    interval: string; // e.g., 1m,5m,1h,1d
-    from: number; // seconds
-    to: number; // seconds
-  }, apiHost: string): Promise<NormalizedCandle[]>;
+  fetchSymbolMeta(
+    symbol: string,
+    apiHost: string,
+  ): Promise<{ priceScale: number }>;
+  fetchBars(
+    params: {
+      symbol: string;
+      interval: string; // e.g., 1m,5m,1h,1d
+      from: number; // seconds
+      to: number; // seconds
+    },
+    apiHost: string,
+  ): Promise<NormalizedCandle[]>;
   fetchServerTime(apiHost: string): Promise<number>; // seconds
 }
 
@@ -46,11 +52,16 @@ export function mapKuCoinFuturesGranularity(interval: string): number {
   const value = parseInt(match[1]);
   const unit = match[2];
   switch (unit) {
-    case "m": return value;
-    case "h": return value * 60;
-    case "d": return value * 1440;
-    case "w": return value * 10080;
-    default: return 60;
+    case "m":
+      return value;
+    case "h":
+      return value * 60;
+    case "d":
+      return value * 1440;
+    case "w":
+      return value * 10080;
+    default:
+      return 60;
   }
 }
 
@@ -58,7 +69,7 @@ const binanceAdapter: ExchangeAdapter = {
   async fetchSymbolMeta(symbol, apiHost) {
     const info = await makeApiRequest(
       `api/v3/exchangeInfo?symbol=${symbol}`,
-      apiHost
+      apiHost,
     );
     // Use quotePrecision (price precision) instead of baseAssetPrecision
     const priceScale = Number(info.symbols?.[0]?.quotePrecision) || 8;
@@ -74,7 +85,7 @@ const binanceAdapter: ExchangeAdapter = {
     });
     const data = await makeApiRequest(
       `api/v3/uiKlines?${params.toString()}`,
-      apiHost
+      apiHost,
     );
     const candles: NormalizedCandle[] = Array.isArray(data)
       ? data.map((bar: any) => [
@@ -101,7 +112,7 @@ const kucoinAdapter: ExchangeAdapter = {
       // KuCoin Futures: GET /api/v1/contracts/{symbol}
       const info = await makeApiRequest(
         `api/v1/contracts/${symbol}`,
-        KUCOIN_FUTURES_API
+        KUCOIN_FUTURES_API,
       );
       let priceScale = 8;
       if (info?.data?.tickSize) {
@@ -115,13 +126,14 @@ const kucoinAdapter: ExchangeAdapter = {
     // KuCoin Spot
     const info = await makeApiRequest(
       `api/v1/symbols?symbol=${symbol}`,
-      apiHost
+      apiHost,
     );
     let priceScale = 8;
     if (info?.data && info.data.length > 0) {
       // Use priceIncrement (price precision) instead of baseIncrement
       const incRaw = info.data[0].priceIncrement;
-      const incStr = typeof incRaw === "number" ? incRaw.toString() : String(incRaw || "");
+      const incStr =
+        typeof incRaw === "number" ? incRaw.toString() : String(incRaw || "");
       const dot = incStr.indexOf(".");
       priceScale = dot >= 0 ? Math.max(0, incStr.length - dot - 1) : 0;
     }
@@ -140,17 +152,17 @@ const kucoinAdapter: ExchangeAdapter = {
       });
       const resp = await makeApiRequest(
         `api/v1/kline/query?${params.toString()}`,
-        KUCOIN_FUTURES_API
+        KUCOIN_FUTURES_API,
       );
       const raw = Array.isArray(resp?.data) ? resp.data : [];
       // Futures candle format: [time(ms), open, high, low, close, volume]
       const candles: NormalizedCandle[] = raw.map((bar: any) => [
-        Number(bar[0]),       // time already in ms
-        Number(bar[1]),       // open
-        Number(bar[2]),       // high
-        Number(bar[3]),       // low
-        Number(bar[4]),       // close
-        Number(bar[5]),       // volume
+        Number(bar[0]), // time already in ms
+        Number(bar[1]), // open
+        Number(bar[2]), // high
+        Number(bar[3]), // low
+        Number(bar[4]), // close
+        Number(bar[5]), // volume
       ]);
       candles.sort((a, b) => a[0] - b[0]);
       return candles;
@@ -166,7 +178,7 @@ const kucoinAdapter: ExchangeAdapter = {
     });
     const resp = await makeApiRequest(
       `api/v1/market/candles?${params.toString()}`,
-      apiHost
+      apiHost,
     );
     const raw = Array.isArray(resp?.data) ? resp.data : [];
     // Spot candle format: [time(s), open, close, high, low, volume, turnover]

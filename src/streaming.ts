@@ -1,12 +1,17 @@
 import { EXCHANGE_BINANCE, EXCHANGE_KUCOIN } from "./exchanges";
-import { isKucoinFutures, mapKuCoinFuturesGranularity } from "./exchangeAdapters";
+import {
+  isKucoinFutures,
+  mapKuCoinFuturesGranularity,
+} from "./exchangeAdapters";
 
 const channelToSubscription = new Map();
 let pingInterval: number | null = null;
 let reconnectTimeout: number | null = null;
 
 declare global {
-  interface Window { socket: WebSocket; }
+  interface Window {
+    socket: WebSocket;
+  }
 }
 
 interface StreamingConfig {
@@ -24,14 +29,17 @@ interface SubscriptionRequest {
   response?: boolean;
 }
 
-function setupSockets(subRequest: SubscriptionRequest, config: StreamingConfig) {
+function setupSockets(
+  subRequest: SubscriptionRequest,
+  config: StreamingConfig,
+) {
   const socket: WebSocket = new WebSocket(config.wsUrl);
   window.socket = socket;
-  
+
   socket.onopen = (event) => {
     console.log("[socket] Connected");
     socket.send(JSON.stringify(subRequest));
-    
+
     // Setup ping interval for KuCoin (every 20 seconds)
     if (config.exchange === EXCHANGE_KUCOIN) {
       if (pingInterval) {
@@ -47,13 +55,13 @@ function setupSockets(subRequest: SubscriptionRequest, config: StreamingConfig) 
 
   socket.onclose = (reason) => {
     console.log("[socket] Disconnected:", reason);
-    
+
     // Clear ping interval
     if (pingInterval) {
       clearInterval(pingInterval);
       pingInterval = null;
     }
-    
+
     // Reconnect after 3 seconds if there are active subscriptions
     if (channelToSubscription.size > 0) {
       console.log("[socket] Reconnecting in 3 seconds...");
@@ -72,12 +80,12 @@ function setupSockets(subRequest: SubscriptionRequest, config: StreamingConfig) 
 
   socket.onmessage = (e) => {
     const data = JSON.parse(e.data);
-    
+
     // Handle KuCoin pong response
     if (data.type === "pong") {
       return;
     }
-    
+
     // Parse based on exchange
     if (config.exchange === EXCHANGE_BINANCE) {
       parseBinanceMessage(data);
@@ -128,33 +136,33 @@ function parseKuCoinMessage(data: any) {
   if (data.type !== "message" || !data.data) {
     return;
   }
-  
+
   const candlesData = data.data.candles;
   if (!candlesData) {
     return;
   }
-  
+
   // KuCoin candle format: single string "time,open,close,high,low,volume,turnover"
   // or array format depending on the endpoint
   let candleArray: string[];
-  if (typeof candlesData === 'string') {
-    candleArray = candlesData.split(',');
+  if (typeof candlesData === "string") {
+    candleArray = candlesData.split(",");
   } else if (Array.isArray(candlesData)) {
     // If it's already an array, use it directly
     candleArray = candlesData;
   } else {
     return;
   }
-  
+
   // KuCoin candle format: [time, open, close, high, low, volume, turnover]
   const [timestamp, open, close, high, low, volume] = candleArray;
-  
+
   const channelString = data.topic; // KuCoin uses topic for channel identification
   const subscriptionItem = channelToSubscription.get(channelString);
   if (subscriptionItem === undefined) {
     return;
   }
-  
+
   const bar = {
     time: parseInt(timestamp) * 1000, // KuCoin uses seconds, convert to milliseconds
     open: parseFloat(open),
@@ -163,7 +171,7 @@ function parseKuCoinMessage(data: any) {
     close: parseFloat(close),
     volume: parseFloat(volume),
   };
-  
+
   // send data to every subscriber of that symbol
   subscriptionItem.handlers.forEach((handler) => handler.callback(bar));
 }
@@ -176,7 +184,7 @@ export function subscribeOnStream(
   onResetCacheNeededCallback,
   interval,
   wsUrl: string,
-  exchange: string = EXCHANGE_BINANCE
+  exchange: string = EXCHANGE_BINANCE,
 ) {
   let channelString: string;
   if (exchange === EXCHANGE_BINANCE) {
@@ -189,7 +197,7 @@ export function subscribeOnStream(
     // KuCoin Spot
     channelString = `/market/candles:${symbolInfo.name}_${interval}`;
   }
-  
+
   const handler = {
     id: subscribeUID,
     callback: onRealtimeCallback,
@@ -206,21 +214,22 @@ export function subscribeOnStream(
     handlers: [handler],
     exchange, // Store exchange for unsubscribe
   };
-  
-  const subRequest = exchange === EXCHANGE_BINANCE
-    ? {
-        method: "SUBSCRIBE",
-        params: [channelString],
-        id: 1,
-      }
-    : {
-        id: Date.now(),
-        type: "subscribe",
-        topic: channelString,
-        privateChannel: false,
-        response: true,
-      };
-  
+
+  const subRequest =
+    exchange === EXCHANGE_BINANCE
+      ? {
+          method: "SUBSCRIBE",
+          params: [channelString],
+          id: 1,
+        }
+      : {
+          id: Date.now(),
+          type: "subscribe",
+          topic: channelString,
+          privateChannel: false,
+          response: true,
+        };
+
   channelToSubscription.set(channelString, subscriptionItem);
   setupSockets(subRequest, { wsUrl, exchange });
 }
@@ -230,7 +239,7 @@ export function unsubscribeFromStream(subscriberUID) {
   for (const channelString of channelToSubscription.keys()) {
     const subscriptionItem = channelToSubscription.get(channelString);
     const handlerIndex = subscriptionItem.handlers.findIndex(
-      (handler) => handler.id === subscriberUID
+      (handler) => handler.id === subscriberUID,
     );
 
     if (handlerIndex !== -1) {
@@ -241,29 +250,30 @@ export function unsubscribeFromStream(subscriberUID) {
         // unsubscribe from the channel, if it was the last handler
         console.log(
           "[unsubscribeBars]: Unsubscribe from streaming. Channel:",
-          channelString
+          channelString,
         );
-        
+
         // Use exchange-specific unsubscribe format
-        const subRequest = subscriptionItem.exchange === EXCHANGE_BINANCE
-          ? {
-              method: "UNSUBSCRIBE",
-              params: [channelString],
-              id: 1,
-            }
-          : {
-              id: Date.now(),
-              type: "unsubscribe",
-              topic: channelString,
-              privateChannel: false,
-              response: true,
-            };
-        
+        const subRequest =
+          subscriptionItem.exchange === EXCHANGE_BINANCE
+            ? {
+                method: "UNSUBSCRIBE",
+                params: [channelString],
+                id: 1,
+              }
+            : {
+                id: Date.now(),
+                type: "unsubscribe",
+                topic: channelString,
+                privateChannel: false,
+                response: true,
+              };
+
         if (window.socket && window.socket.readyState === WebSocket.OPEN) {
           window.socket.send(JSON.stringify(subRequest));
         }
         channelToSubscription.delete(channelString);
-        
+
         // Clear intervals and close socket if no more subscriptions
         if (channelToSubscription.size === 0) {
           if (pingInterval) {

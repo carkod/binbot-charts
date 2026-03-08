@@ -38,18 +38,18 @@ export const SUPPORTED_EXCHANGES: Record<string, ExchangeConfig> = {
         ? "https://api-futures.kucoin.com"
         : "https://api.kucoin.com";
       try {
-        const data = await makeApiRequest(
-          "api/v1/bullet-public",
-          apiBase,
-          { method: "POST" }
-        );
+        const data = await makeApiRequest("api/v1/bullet-public", apiBase, {
+          method: "POST",
+        });
         if (data.code === "200000" && data.data?.instanceServers?.length > 0) {
           const server = data.data.instanceServers[0];
           return `${server.endpoint}?token=${data.data.token}`;
         }
         throw new Error("Failed to get KuCoin WebSocket URL: Invalid response");
       } catch (error: any) {
-        throw new Error(`Failed to get KuCoin WebSocket URL: ${error?.message || String(error)}`);
+        throw new Error(
+          `Failed to get KuCoin WebSocket URL: ${error?.message || String(error)}`,
+        );
       }
     },
   },

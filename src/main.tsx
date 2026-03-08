@@ -1,12 +1,9 @@
-import { FC, useEffect, useRef, useState } from "react";
+import { FC, useEffect, useRef } from "react";
 import { useImmer } from "use-immer";
 import { type IOrderLine } from "./charting-library-interfaces";
-import {
-  ResolutionString,
-  widget,
-} from "./charting_library/";
+import { ResolutionString, widget } from "./charting_library/";
 import Datafeed from "./datafeed";
-import { ExchangeConfig, SUPPORTED_EXCHANGES } from "./exchanges";
+import { SUPPORTED_EXCHANGES } from "./exchanges";
 
 export interface OrderLine extends IOrderLine {
   id: string;
@@ -42,85 +39,34 @@ const TVChartContainer: FC<TVChartContainerProps> = ({
 
   const [chartOrderLines, setChartOrderLines] = useImmer<any[]>([]);
   const [widgetState, setWidgetState] = useImmer<any>(null);
-  const [symbolState, setSymbolState] = useState<string | null>(symbol);
-  const [transformedSymbol, setTransformedSymbol] = useState<string | null>(null);
-  const [isLoadingSymbol, setIsLoadingSymbol] = useState<boolean>(false);
   const prevTimescaleMarks = useRef<any[]>(timescaleMarks);
   const prevExchange = useRef<string>(exchange);
-
-  // Fetch symbol metadata and transform based on exchange
-  useEffect(() => {
-    const fetchSymbolMetadata = async () => {
-      if (!symbol) return;
-      
-      setIsLoadingSymbol(true);
-      try {
-        // Remove any dashes or formatting from input symbol
-        const cleanSymbol = symbol.replace(/-/g, '');
-        const response = await fetch(`https://api.terminal.binbot.in/symbol/${cleanSymbol}`);
-        
-        if (!response.ok) {
-          console.warn(`Failed to fetch symbol metadata for ${cleanSymbol}, using original symbol`);
-          setTransformedSymbol(symbol);
-          return;
-        }
-        
-        const result = await response.json();
-        if (result.data?.base_asset && result.data?.quote_asset) {
-          const { base_asset, quote_asset } = result.data;
-          // KuCoin uses dash separator, Binance uses no separator
-          const formatted = exchange.toLowerCase() === 'kucoin'
-            ? `${base_asset}-${quote_asset}`
-            : `${base_asset}${quote_asset}`;
-          setTransformedSymbol(formatted);
-        } else {
-          console.warn('Invalid symbol metadata response, using original symbol');
-          setTransformedSymbol(symbol);
-        }
-      } catch (error) {
-        console.error('Error fetching symbol metadata:', error);
-        setTransformedSymbol(symbol);
-      } finally {
-        setIsLoadingSymbol(false);
-      }
-    };
-    
-    fetchSymbolMetadata();
-  }, [symbol, exchange]);
+  const prevSymbol = useRef<string>(symbol);
 
   useEffect(() => {
-    // Don't initialize until symbol is transformed
-    if (isLoadingSymbol || !transformedSymbol) {
-      return;
-    }
-    
-    if (!widgetState) {
-      initializeChart(interval);
-      prevExchange.current = exchange;
-      setSymbolState(transformedSymbol);
-      return;
-    }
+    if (!symbol) return;
 
-    // Reinitialize chart if exchange changes
-    if (widgetState && exchange !== prevExchange.current) {
+    // If widget exists and symbol or exchange changed, tear down and reinitialize
+    if (
+      widgetState &&
+      (symbol !== prevSymbol.current || exchange !== prevExchange.current)
+    ) {
       widgetState.remove();
       setWidgetState(null);
+      prevSymbol.current = symbol;
       prevExchange.current = exchange;
-      // Will reinitialize on next render
+      return; // Will reinitialize on next render with widgetState === null
+    }
+
+    if (!widgetState) {
+      initializeChart(interval);
+      prevSymbol.current = symbol;
+      prevExchange.current = exchange;
       return;
     }
 
     if (orderLines && orderLines.length > 0) {
       updateOrderLines(orderLines);
-    }
-
-    if (widgetState && transformedSymbol !== symbolState) {
-      try {
-        widgetState.setSymbol(transformedSymbol, interval);
-        setSymbolState(transformedSymbol);
-      } catch (error) {
-        console.error("Failed to set symbol:", error);
-      }
     }
 
     if (
@@ -131,7 +77,7 @@ const TVChartContainer: FC<TVChartContainerProps> = ({
       widgetState._options.datafeed.timescaleMarks = timescaleMarks;
       prevTimescaleMarks.current = timescaleMarks;
     }
-  }, [orderLines, timescaleMarks, exchange, isLoadingSymbol, transformedSymbol, widgetState, symbolState, interval]);
+  }, [symbol, orderLines, timescaleMarks, exchange, widgetState, interval]);
 
   const initializeChart = (interval: ResolutionString) => {
     // Get exchange configuration
@@ -140,19 +86,19 @@ const TVChartContainer: FC<TVChartContainerProps> = ({
       console.error(`Exchange ${exchange} not supported`);
       return;
     }
-    
+
     // Get list of supported exchange configs
     const supportedExchangeConfigs = supportedExchanges
-      .map(ex => SUPPORTED_EXCHANGES[ex.toLowerCase()])
+      .map((ex) => SUPPORTED_EXCHANGES[ex.toLowerCase()])
       .filter(Boolean);
-    
+
     const widgetOptions: any = {
-      symbol: transformedSymbol || symbol,
+      symbol: symbol,
       datafeed: new Datafeed(
-        timescaleMarks, 
-        interval, 
+        timescaleMarks,
+        interval,
         exchangeConfig,
-        supportedExchangeConfigs
+        supportedExchangeConfigs,
       ),
       interval: interval,
       container: containerRef.current,
@@ -183,7 +129,10 @@ const TVChartContainer: FC<TVChartContainerProps> = ({
             includeSeries: true,
             includedStudies: [],
           });
-          const last = data?.data && data.data.length > 0 ? data.data[data.data.length - 1] : null;
+          const last =
+            data?.data && data.data.length > 0
+              ? data.data[data.data.length - 1]
+              : null;
           if (last && getLatestBar) {
             getLatestBar(last);
           }

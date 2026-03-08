@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 
-
 function resolveApiBase(apiHost: string): string {
   // In browser during development, route through Vite proxy to avoid CORS
   if (typeof window !== "undefined") {
@@ -14,7 +13,7 @@ function resolveApiBase(apiHost: string): string {
 export async function makeApiRequest(
   path: string,
   apiHost: string = "https://api.binance.com",
-  init?: RequestInit
+  init?: RequestInit,
 ) {
   try {
     const base = resolveApiBase(apiHost);
@@ -29,11 +28,18 @@ export async function makeApiRequest(
   }
 }
 
-export async function getAllSymbols(symbol: string, apiHost: string = "https://api.binance.com", exchange: string = "Binance") {
+export async function getAllSymbols(
+  symbol: string,
+  apiHost: string = "https://api.binance.com",
+  exchange: string = "Binance",
+) {
   let newSymbols = [];
   try {
-    const data = await makeApiRequest(`api/v3/exchangeInfo?symbol=${symbol.toUpperCase()}`, apiHost);
-    data.symbols.forEach(item => {
+    const data = await makeApiRequest(
+      `api/v3/exchangeInfo?symbol=${symbol.toUpperCase()}`,
+      apiHost,
+    );
+    data.symbols.forEach((item) => {
       if (item.status === "TRADING") {
         newSymbols.push({
           symbol: item.symbol,
@@ -46,7 +52,7 @@ export async function getAllSymbols(symbol: string, apiHost: string = "https://a
       }
     });
   } catch (e) {
-    return newSymbols
+    return newSymbols;
   }
   return newSymbols;
 }
@@ -65,8 +71,8 @@ export function roundTime(ts: number): number {
    */
   let time = new Date(ts);
   time.setMinutes(0);
-  time.setSeconds(0)
+  time.setSeconds(0);
   time.setMilliseconds(0);
   const roundFloor = time.getTime();
-  return roundFloor / 1000
+  return roundFloor / 1000;
 }

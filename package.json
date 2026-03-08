@@ -8,6 +8,7 @@
     "url": "git+https://github.com/carkod/binbot-charts.git"
   },
   "dependencies": {
+    "binbot-charts": "^0.12.12",
     "use-immer": "^0.10.0"
   },
   "peerDependencies": {
@@ -21,8 +22,10 @@
     "@types/react": "^18.0.26",
     "@types/react-dom": "^18.0.10",
     "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^10.0.3",
     "happy-dom": "^20.0.11",
     "immer": "^9.0.17",
+    "prettier": "^3.8.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "serve": "^14.2.4",
@@ -34,6 +37,7 @@
   "scripts": {
     "dev": "vite",
     "start": "vite",
+    "format": "prettier --write 'src/**/*.{ts,tsx,css}' '!src/charting_library/**'",
     "build": "rm -rf dist && tsup --config tsup.config.ts --env.NODE_ENV production",
     "test": "vitest run --environment=happy-dom",
     "lint": "npx eslint .",
