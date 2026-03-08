@@ -14,7 +14,7 @@ export interface ExchangeConfig {
   restApiUrl: string;
   wsUrl: string;
   // KuCoin requires dynamic WebSocket URL, so this can be a function
-  getWsUrl?: () => Promise<string>;
+  getWsUrl?: (symbol?: string) => Promise<string>;
 }
 
 import { makeApiRequest } from "./helpers";
@@ -31,21 +31,25 @@ export const SUPPORTED_EXCHANGES: Record<string, ExchangeConfig> = {
     value: EXCHANGE_KUCOIN,
     restApiUrl: "https://api.kucoin.com",
     wsUrl: "", // Will be fetched dynamically
-    getWsUrl: async () => {
-      // KuCoin requires POST to bullet-public; use proxy via makeApiRequest
+    getWsUrl: async (symbol?: string) => {
+      // Determine whether to use spot or futures bullet endpoint
+      const isFutures = symbol?.endsWith("M");
+      const apiBase = isFutures
+        ? "https://api-futures.kucoin.com"
+        : "https://api.kucoin.com";
       try {
-        const data = await makeApiRequest(
-          "api/v1/bullet-public",
-          "https://api.kucoin.com",
-          { method: "POST" }
-        );
+        const data = await makeApiRequest("api/v1/bullet-public", apiBase, {
+          method: "POST",
+        });
         if (data.code === "200000" && data.data?.instanceServers?.length > 0) {
           const server = data.data.instanceServers[0];
           return `${server.endpoint}?token=${data.data.token}`;
         }
         throw new Error("Failed to get KuCoin WebSocket URL: Invalid response");
       } catch (error: any) {
-        throw new Error(`Failed to get KuCoin WebSocket URL: ${error?.message || String(error)}`);
+        throw new Error(
+          `Failed to get KuCoin WebSocket URL: ${error?.message || String(error)}`,
+        );
       }
     },
   },

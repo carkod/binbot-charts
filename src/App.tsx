@@ -13,7 +13,7 @@ type TimeMarks = Immutable<ITimescaleMarks>;
 export const App: FC<{}> = (): JSX.Element => {
   const [currentPrice, setCurrentPrice] = useState(null);
   const [orderLines, setOrderLines] = useImmer<OrderLine[]>([]);
-  const [symbolState, setSymbolState] = useState("SUPER-USDT");
+  const [symbolState, setSymbolState] = useState("SUPERUSDTM");
   const [exchangeState, setExchangeState] = useState<Exchange>(Exchange.KUCOIN);
   const [testTimeMarks, setTestTimeMarks] = useState<Array<TimeMarks>>([]);
 
@@ -77,13 +77,27 @@ export const App: FC<{}> = (): JSX.Element => {
     <>
       <h1 style={{ textAlign: "center" }}>Test chart</h1>
       <div style={{ padding: "10px", textAlign: "center" }}>
-        <label htmlFor="exchange" style={{ marginRight: "10px" }}>Exchange:</label>
-        <select name="exchange" onChange={handleChange} value={exchangeState} style={{ marginRight: "20px" }}>
+        <label htmlFor="exchange" style={{ marginRight: "10px" }}>
+          Exchange:
+        </label>
+        <select
+          name="exchange"
+          onChange={handleChange}
+          value={exchangeState}
+          style={{ marginRight: "20px" }}
+        >
           <option value={Exchange.BINANCE}>Binance</option>
           <option value={Exchange.KUCOIN}>KuCoin</option>
         </select>
-        <label htmlFor="symbol" style={{ marginRight: "10px" }}>Type symbol:</label>
-        <input name="symbol" type="text" onChange={handleChange} value={symbolState} />
+        <label htmlFor="symbol" style={{ marginRight: "10px" }}>
+          Type symbol:
+        </label>
+        <input
+          name="symbol"
+          type="text"
+          onChange={handleChange}
+          value={symbolState}
+        />
       </div>
       <TVChartContainer
         symbol={symbolState}

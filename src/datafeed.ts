@@ -1,5 +1,9 @@
 import { getAllSymbols, makeApiRequest } from "./helpers";
-import { getExchangeAdapter, type ExchangeAdapter, type NormalizedCandle } from "./exchangeAdapters";
+import {
+  getExchangeAdapter,
+  type ExchangeAdapter,
+  type NormalizedCandle,
+} from "./exchangeAdapters";
 import { subscribeOnStream, unsubscribeFromStream } from "./streaming";
 import { ExchangeConfig } from "./exchanges";
 
@@ -31,7 +35,9 @@ interface ConfigurationData {
   symbols_types: { name: string; value: string }[];
 }
 
-const getConfigurationData = async (supportedExchanges: ExchangeConfig[]): Promise<ConfigurationData> => {
+const getConfigurationData = async (
+  supportedExchanges: ExchangeConfig[],
+): Promise<ConfigurationData> => {
   return {
     supports_marks: true,
     supports_timescale_marks: true,
@@ -54,7 +60,7 @@ const getConfigurationData = async (supportedExchanges: ExchangeConfig[]): Promi
       "1W",
       "12M",
     ],
-    exchanges: supportedExchanges.map(exchange => ({
+    exchanges: supportedExchanges.map((exchange) => ({
       value: exchange.value,
       name: exchange.name,
       desc: exchange.name,
@@ -122,10 +128,10 @@ export default class Datafeed {
   private adapter: ExchangeAdapter;
 
   constructor(
-    timescaleMarks: TimescaleMark[] = [], 
+    timescaleMarks: TimescaleMark[] = [],
     interval: string = "1h",
     exchangeConfig: ExchangeConfig,
-    supportedExchanges: ExchangeConfig[] = []
+    supportedExchanges: ExchangeConfig[] = [],
   ) {
     this.streaming = null;
     this.timescaleMarks = timescaleMarks;
@@ -135,8 +141,12 @@ export default class Datafeed {
     this.adapter = getExchangeAdapter(this.exchangeConfig.name);
   }
 
-  onReady = async (callback: (data: ConfigurationData) => void): Promise<void> => {
-    this.configurationData = await getConfigurationData(this.supportedExchanges);
+  onReady = async (
+    callback: (data: ConfigurationData) => void,
+  ): Promise<void> => {
+    this.configurationData = await getConfigurationData(
+      this.supportedExchanges,
+    );
     callback(this.configurationData);
   };
 
@@ -144,12 +154,12 @@ export default class Datafeed {
     userInput: string,
     exchange: string,
     symbolType: string,
-    onResultReadyCallback: (symbols: any[]) => void
+    onResultReadyCallback: (symbols: any[]) => void,
   ): Promise<void> => {
     const symbols = await getAllSymbols(
-      userInput, 
+      userInput,
       this.exchangeConfig.restApiUrl,
-      this.exchangeConfig.name
+      this.exchangeConfig.name,
     );
     onResultReadyCallback(symbols);
   };
@@ -157,7 +167,7 @@ export default class Datafeed {
   resolveSymbol = async (
     symbolName: string,
     onSymbolResolvedCallback: (symbolInfo: SymbolInfo) => void,
-    onResolveErrorCallback: (error: string) => void
+    onResolveErrorCallback: (error: string) => void,
   ): Promise<void> => {
     if (!symbolName) {
       await onResolveErrorCallback("cannot resolve symbol");
@@ -165,7 +175,10 @@ export default class Datafeed {
     }
 
     const symbolInfo = async (): Promise<SymbolInfo> => {
-      const meta = await this.adapter.fetchSymbolMeta(symbolName, this.exchangeConfig.restApiUrl);
+      const meta = await this.adapter.fetchSymbolMeta(
+        symbolName,
+        this.exchangeConfig.restApiUrl,
+      );
       const priceScale = meta.priceScale ?? 8;
 
       return {
@@ -198,11 +211,19 @@ export default class Datafeed {
     resolution: string,
     periodParams: PeriodParams,
     onHistoryCallback: (bars: Bar[], meta: { noData: boolean }) => void,
-    onErrorCallback: (error: any) => void
+    onErrorCallback: (error: any) => void,
   ): Promise<void> => {
     const { from, to, firstDataRequest } = periodParams;
+
+    // Only fetch on the first data request; tell TradingView there's
+    // no older history so it stops paginating backwards.
+    if (!firstDataRequest) {
+      onHistoryCallback([], { noData: true });
+      return;
+    }
+
     let interval = "60"; // 1 hour
-    
+
     // Calculate interval using resolution data
     if (!/[a-zA-Z]$/.test(resolution)) {
       if (parseInt(resolution) >= 60) {
@@ -211,20 +232,22 @@ export default class Datafeed {
         interval = resolution + "m";
       }
     } else {
-      interval = resolution.toLowerCase().replace(/[a-z]\b/g, (c) => c.toLowerCase());
+      interval = resolution
+        .toLowerCase()
+        .replace(/[a-z]\b/g, (c) => c.toLowerCase());
     }
 
     try {
       const data: NormalizedCandle[] = await this.adapter.fetchBars(
         { symbol: symbolInfo.name, interval, from, to },
-        this.exchangeConfig.restApiUrl
+        this.exchangeConfig.restApiUrl,
       );
 
       if (!Array.isArray(data) || data.length === 0) {
         onHistoryCallback([], { noData: true });
         return;
       }
-      
+
       let bars: Bar[] = [];
       data.forEach((bar) => {
         if (bar[0] >= from * 1000 && bar[0] < to * 1000) {
@@ -241,7 +264,7 @@ export default class Datafeed {
           ];
         }
       });
-      onHistoryCallback(bars, { noData: false });
+      onHistoryCallback(bars, { noData: bars.length === 0 });
     } catch (error) {
       console.log("[getBars]: Get error", error);
       onErrorCallback(error);
@@ -253,7 +276,7 @@ export default class Datafeed {
     from: number,
     to: number,
     onDataCallback: (marks: TimescaleMark[]) => void,
-    resolution: string
+    resolution: string,
   ): void {
     if (this.timescaleMarks.length > 0) {
       let timescaleMarks = Object.assign([], this.timescaleMarks);
@@ -261,8 +284,12 @@ export default class Datafeed {
     }
   }
 
-  async getServerTime(onServertimeCallback: (time: number) => void): Promise<void> {
-    const serverTime = await this.adapter.fetchServerTime(this.exchangeConfig.restApiUrl);
+  async getServerTime(
+    onServertimeCallback: (time: number) => void,
+  ): Promise<void> {
+    const serverTime = await this.adapter.fetchServerTime(
+      this.exchangeConfig.restApiUrl,
+    );
     onServertimeCallback(serverTime);
   }
 
@@ -271,20 +298,20 @@ export default class Datafeed {
     resolution: string,
     onRealtimeCallback: (bar: Bar) => void,
     subscribeUID: string,
-    onResetCacheNeededCallback: () => void
+    onResetCacheNeededCallback: () => void,
   ): void => {
     // Get WebSocket URL (might be dynamic for KuCoin)
     const connectWebSocket = async () => {
       let wsUrl = this.exchangeConfig.wsUrl;
       if (this.exchangeConfig.getWsUrl) {
         try {
-          wsUrl = await this.exchangeConfig.getWsUrl();
+          wsUrl = await this.exchangeConfig.getWsUrl(symbolInfo.name);
         } catch (error) {
           console.error("Failed to get WebSocket URL:", error);
           return;
         }
       }
-      
+
       subscribeOnStream(
         symbolInfo,
         resolution,
@@ -293,10 +320,10 @@ export default class Datafeed {
         onResetCacheNeededCallback,
         this.interval,
         wsUrl,
-        this.exchangeConfig.name
+        this.exchangeConfig.name,
       );
     };
-    
+
     // Execute connection asynchronously
     connectWebSocket();
   };

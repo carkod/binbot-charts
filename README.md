@@ -3,26 +3,26 @@ Import it in your project as a React component
 
 `import TVChartContainer from 'binbot-charts'`
 
-
 ## Multi-Exchange Support
 
 This library now supports multiple cryptocurrency exchanges. You can configure which exchange to use and which exchanges to make available for symbol search.
 
 ### Supported Exchanges
+
 - **Binance** - Default exchange
 - **KuCoin** - Added in v0.7.3+
 
 ### Usage Example
 
 ```jsx
-import TVChartContainer, { SUPPORTED_EXCHANGES } from 'binbot-charts';
+import TVChartContainer, { SUPPORTED_EXCHANGES } from "binbot-charts";
 
 function MyChart() {
   return (
     <TVChartContainer
       symbol="BTCUSDT"
       interval="1h"
-      exchange="binance"  // or "kucoin"
+      exchange="binance" // or "kucoin"
       supportedExchanges={["binance", "kucoin"]}
     />
   );
@@ -45,13 +45,12 @@ function MyChart() {
 You can also import and use the exchange configurations directly:
 
 ```jsx
-import { SUPPORTED_EXCHANGES, ExchangeConfig } from 'binbot-charts';
+import { SUPPORTED_EXCHANGES, ExchangeConfig } from "binbot-charts";
 
 // Access exchange configuration
 const binanceConfig = SUPPORTED_EXCHANGES.binance;
 console.log(binanceConfig.restApiUrl); // "https://api.binance.com"
 ```
-
 
 ## How to start
 
@@ -64,4 +63,5 @@ console.log(binanceConfig.restApiUrl); // "https://api.binance.com"
 This project was bootstrapped with [Create React App](https://github.com/facebookincubator/create-react-app).
 
 ## Notes
+
 The earliest supported version of Node of the charting library for these examples is `v20`.

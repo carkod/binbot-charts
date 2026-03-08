@@ -1,23 +1,38 @@
 import { makeApiRequest } from "./helpers";
 
+const KUCOIN_FUTURES_API = "https://api-futures.kucoin.com";
+
 export type NormalizedCandle = [
   number, // time in ms
   number, // open
   number, // high
   number, // low
   number, // close
-  number // volume
+  number, // volume
 ];
 
 export interface ExchangeAdapter {
-  fetchSymbolMeta(symbol: string, apiHost: string): Promise<{ priceScale: number }>;
-  fetchBars(params: {
-    symbol: string;
-    interval: string; // e.g., 1m,5m,1h,1d
-    from: number; // seconds
-    to: number; // seconds
-  }, apiHost: string): Promise<NormalizedCandle[]>;
+  fetchSymbolMeta(
+    symbol: string,
+    apiHost: string,
+  ): Promise<{ priceScale: number }>;
+  fetchBars(
+    params: {
+      symbol: string;
+      interval: string; // e.g., 1m,5m,1h,1d
+      from: number; // seconds
+      to: number; // seconds
+    },
+    apiHost: string,
+  ): Promise<NormalizedCandle[]>;
   fetchServerTime(apiHost: string): Promise<number>; // seconds
+}
+
+/**
+ * Check if a KuCoin symbol is a futures contract (ends with "M", e.g. XBTUSDTM)
+ */
+export function isKucoinFutures(symbol: string): boolean {
+  return symbol.endsWith("M");
 }
 
 function mapKuCoinInterval(interval: string): string {
@@ -27,11 +42,34 @@ function mapKuCoinInterval(interval: string): string {
   return interval;
 }
 
+/**
+ * Map interval string to KuCoin Futures granularity (in minutes).
+ * Supported: 1, 5, 15, 30, 60, 120, 240, 480, 720, 1440, 10080
+ */
+export function mapKuCoinFuturesGranularity(interval: string): number {
+  const match = interval.match(/^(\d+)([mhdw])$/);
+  if (!match) return 60;
+  const value = parseInt(match[1]);
+  const unit = match[2];
+  switch (unit) {
+    case "m":
+      return value;
+    case "h":
+      return value * 60;
+    case "d":
+      return value * 1440;
+    case "w":
+      return value * 10080;
+    default:
+      return 60;
+  }
+}
+
 const binanceAdapter: ExchangeAdapter = {
   async fetchSymbolMeta(symbol, apiHost) {
     const info = await makeApiRequest(
       `api/v3/exchangeInfo?symbol=${symbol}`,
-      apiHost
+      apiHost,
     );
     // Use quotePrecision (price precision) instead of baseAssetPrecision
     const priceScale = Number(info.symbols?.[0]?.quotePrecision) || 8;
@@ -47,7 +85,7 @@ const binanceAdapter: ExchangeAdapter = {
     });
     const data = await makeApiRequest(
       `api/v3/uiKlines?${params.toString()}`,
-      apiHost
+      apiHost,
     );
     const candles: NormalizedCandle[] = Array.isArray(data)
       ? data.map((bar: any) => [
@@ -68,23 +106,108 @@ const binanceAdapter: ExchangeAdapter = {
   },
 };
 
+let kucoinFuturesBarsAbort: AbortController | null = null;
+
 const kucoinAdapter: ExchangeAdapter = {
   async fetchSymbolMeta(symbol, apiHost) {
+    if (isKucoinFutures(symbol)) {
+      // KuCoin Futures: GET /api/v1/contracts/{symbol}
+      const info = await makeApiRequest(
+        `api/v1/contracts/${symbol}`,
+        KUCOIN_FUTURES_API,
+      );
+      let priceScale = 8;
+      if (info?.data?.tickSize) {
+        const tickStr = String(info.data.tickSize);
+        const dot = tickStr.indexOf(".");
+        priceScale = dot >= 0 ? Math.max(0, tickStr.length - dot - 1) : 0;
+      }
+      return { priceScale };
+    }
+
+    // KuCoin Spot
     const info = await makeApiRequest(
       `api/v1/symbols?symbol=${symbol}`,
-      apiHost
+      apiHost,
     );
     let priceScale = 8;
     if (info?.data && info.data.length > 0) {
       // Use priceIncrement (price precision) instead of baseIncrement
       const incRaw = info.data[0].priceIncrement;
-      const incStr = typeof incRaw === "number" ? incRaw.toString() : String(incRaw || "");
+      const incStr =
+        typeof incRaw === "number" ? incRaw.toString() : String(incRaw || "");
       const dot = incStr.indexOf(".");
       priceScale = dot >= 0 ? Math.max(0, incStr.length - dot - 1) : 0;
     }
     return { priceScale };
   },
   async fetchBars({ symbol, interval, from, to }, apiHost) {
+    if (isKucoinFutures(symbol)) {
+      // Abort any in-flight KuCoin Futures bars request
+      if (kucoinFuturesBarsAbort) {
+        kucoinFuturesBarsAbort.abort();
+      }
+      kucoinFuturesBarsAbort = new AbortController();
+      const { signal } = kucoinFuturesBarsAbort;
+
+      // granularity is in minutes: 1,5,15,30,60,120,240,480,720,1440,10080
+      const granularity = mapKuCoinFuturesGranularity(interval);
+      const fromMs = from * 1000;
+      let currentTo = to * 1000;
+      let allCandles: NormalizedCandle[] = [];
+
+      // KuCoin Futures API returns ~200 candles per request and has no limit param.
+      // Paginate backwards: fetch ending at `to`, then use the earliest candle as
+      // the next `to`, until we reach `from` or get no more data.
+      const MAX_PAGES = 10; // safety cap to avoid runaway requests
+      for (let page = 0; page < MAX_PAGES; page++) {
+        const params = new URLSearchParams({
+          symbol,
+          granularity: String(granularity),
+          to: String(currentTo),
+        });
+
+        const resp = await makeApiRequest(
+          `api/v1/kline/query?${params.toString()}`,
+          KUCOIN_FUTURES_API,
+          { signal },
+        );
+        const raw = Array.isArray(resp?.data) ? resp.data : [];
+        if (raw.length === 0) break;
+
+        const candles: NormalizedCandle[] = raw.map((bar: any) => [
+          Number(bar[0]),
+          Number(bar[1]),
+          Number(bar[2]),
+          Number(bar[3]),
+          Number(bar[4]),
+          Number(bar[5]),
+        ]);
+
+        allCandles = allCandles.concat(candles);
+
+        // Find the earliest candle timestamp in this batch
+        const earliest = Math.min(...candles.map((c) => c[0]));
+
+        // Stop if we've reached or passed the requested `from` time
+        if (earliest <= fromMs) break;
+
+        // Use earliest as the next `to` to fetch older data
+        currentTo = earliest;
+      }
+
+      // Deduplicate by timestamp and sort
+      const seen = new Set<number>();
+      const unique = allCandles.filter((c) => {
+        if (seen.has(c[0])) return false;
+        seen.add(c[0]);
+        return true;
+      });
+      unique.sort((a, b) => a[0] - b[0]);
+      return unique;
+    }
+
+    // KuCoin Spot
     const type = mapKuCoinInterval(interval);
     const params = new URLSearchParams({
       symbol,
@@ -94,9 +217,10 @@ const kucoinAdapter: ExchangeAdapter = {
     });
     const resp = await makeApiRequest(
       `api/v1/market/candles?${params.toString()}`,
-      apiHost
+      apiHost,
     );
     const raw = Array.isArray(resp?.data) ? resp.data : [];
+    // Spot candle format: [time(s), open, close, high, low, volume, turnover]
     const candles: NormalizedCandle[] = raw.map((bar: any) => [
       Number(bar[0]) * 1000,
       Number(bar[1]),
