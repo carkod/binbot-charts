@@ -73,7 +73,3 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 ## Notes
 
 The earliest supported version of Node of the charting library for these examples is `v20`.
-
-## Development notes
-1.
-
