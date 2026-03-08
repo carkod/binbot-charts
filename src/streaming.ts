@@ -1,4 +1,5 @@
 import { EXCHANGE_BINANCE, EXCHANGE_KUCOIN } from "./exchanges";
+import { isKucoinFutures, mapKuCoinFuturesGranularity } from "./exchangeAdapters";
 
 const channelToSubscription = new Map();
 let pingInterval: number | null = null;
@@ -177,9 +178,17 @@ export function subscribeOnStream(
   wsUrl: string,
   exchange: string = EXCHANGE_BINANCE
 ) {
-  const channelString = exchange === EXCHANGE_BINANCE 
-    ? `${symbolInfo.name.toLowerCase()}@kline_${interval}`
-    : `/market/candles:${symbolInfo.name}_${interval}`; // KuCoin format
+  let channelString: string;
+  if (exchange === EXCHANGE_BINANCE) {
+    channelString = `${symbolInfo.name.toLowerCase()}@kline_${interval}`;
+  } else if (isKucoinFutures(symbolInfo.name)) {
+    // KuCoin Futures: /contractMarket/candle:{symbol}_{granularity_in_minutes}
+    const granularity = mapKuCoinFuturesGranularity(interval);
+    channelString = `/contractMarket/candle:${symbolInfo.name}_${granularity}`;
+  } else {
+    // KuCoin Spot
+    channelString = `/market/candles:${symbolInfo.name}_${interval}`;
+  }
   
   const handler = {
     id: subscribeUID,

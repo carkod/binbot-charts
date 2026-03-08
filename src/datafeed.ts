@@ -278,7 +278,7 @@ export default class Datafeed {
       let wsUrl = this.exchangeConfig.wsUrl;
       if (this.exchangeConfig.getWsUrl) {
         try {
-          wsUrl = await this.exchangeConfig.getWsUrl();
+          wsUrl = await this.exchangeConfig.getWsUrl(symbolInfo.name);
         } catch (error) {
           console.error("Failed to get WebSocket URL:", error);
           return;
