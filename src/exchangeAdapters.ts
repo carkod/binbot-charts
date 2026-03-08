@@ -106,6 +106,8 @@ const binanceAdapter: ExchangeAdapter = {
   },
 };
 
+let kucoinFuturesBarsAbort: AbortController | null = null;
+
 const kucoinAdapter: ExchangeAdapter = {
   async fetchSymbolMeta(symbol, apiHost) {
     if (isKucoinFutures(symbol)) {
@@ -141,31 +143,68 @@ const kucoinAdapter: ExchangeAdapter = {
   },
   async fetchBars({ symbol, interval, from, to }, apiHost) {
     if (isKucoinFutures(symbol)) {
-      // KuCoin Futures: GET /api/v1/kline/query
+      // Abort any in-flight KuCoin Futures bars request
+      if (kucoinFuturesBarsAbort) {
+        kucoinFuturesBarsAbort.abort();
+      }
+      kucoinFuturesBarsAbort = new AbortController();
+      const { signal } = kucoinFuturesBarsAbort;
+
       // granularity is in minutes: 1,5,15,30,60,120,240,480,720,1440,10080
       const granularity = mapKuCoinFuturesGranularity(interval);
-      const params = new URLSearchParams({
-        symbol,
-        granularity: String(granularity),
-        from: String(from * 1000), // futures expects milliseconds
-        to: String(to * 1000),
+      const fromMs = from * 1000;
+      let currentTo = to * 1000;
+      let allCandles: NormalizedCandle[] = [];
+
+      // KuCoin Futures API returns ~200 candles per request and has no limit param.
+      // Paginate backwards: fetch ending at `to`, then use the earliest candle as
+      // the next `to`, until we reach `from` or get no more data.
+      const MAX_PAGES = 10; // safety cap to avoid runaway requests
+      for (let page = 0; page < MAX_PAGES; page++) {
+        const params = new URLSearchParams({
+          symbol,
+          granularity: String(granularity),
+          to: String(currentTo),
+        });
+
+        const resp = await makeApiRequest(
+          `api/v1/kline/query?${params.toString()}`,
+          KUCOIN_FUTURES_API,
+          { signal },
+        );
+        const raw = Array.isArray(resp?.data) ? resp.data : [];
+        if (raw.length === 0) break;
+
+        const candles: NormalizedCandle[] = raw.map((bar: any) => [
+          Number(bar[0]),
+          Number(bar[1]),
+          Number(bar[2]),
+          Number(bar[3]),
+          Number(bar[4]),
+          Number(bar[5]),
+        ]);
+
+        allCandles = allCandles.concat(candles);
+
+        // Find the earliest candle timestamp in this batch
+        const earliest = Math.min(...candles.map((c) => c[0]));
+
+        // Stop if we've reached or passed the requested `from` time
+        if (earliest <= fromMs) break;
+
+        // Use earliest as the next `to` to fetch older data
+        currentTo = earliest;
+      }
+
+      // Deduplicate by timestamp and sort
+      const seen = new Set<number>();
+      const unique = allCandles.filter((c) => {
+        if (seen.has(c[0])) return false;
+        seen.add(c[0]);
+        return true;
       });
-      const resp = await makeApiRequest(
-        `api/v1/kline/query?${params.toString()}`,
-        KUCOIN_FUTURES_API,
-      );
-      const raw = Array.isArray(resp?.data) ? resp.data : [];
-      // Futures candle format: [time(ms), open, high, low, close, volume]
-      const candles: NormalizedCandle[] = raw.map((bar: any) => [
-        Number(bar[0]), // time already in ms
-        Number(bar[1]), // open
-        Number(bar[2]), // high
-        Number(bar[3]), // low
-        Number(bar[4]), // close
-        Number(bar[5]), // volume
-      ]);
-      candles.sort((a, b) => a[0] - b[0]);
-      return candles;
+      unique.sort((a, b) => a[0] - b[0]);
+      return unique;
     }
 
     // KuCoin Spot

@@ -214,6 +214,14 @@ export default class Datafeed {
     onErrorCallback: (error: any) => void,
   ): Promise<void> => {
     const { from, to, firstDataRequest } = periodParams;
+
+    // Only fetch on the first data request; tell TradingView there's
+    // no older history so it stops paginating backwards.
+    if (!firstDataRequest) {
+      onHistoryCallback([], { noData: true });
+      return;
+    }
+
     let interval = "60"; // 1 hour
 
     // Calculate interval using resolution data
@@ -256,7 +264,7 @@ export default class Datafeed {
           ];
         }
       });
-      onHistoryCallback(bars, { noData: false });
+      onHistoryCallback(bars, { noData: bars.length === 0 });
     } catch (error) {
       console.log("[getBars]: Get error", error);
       onErrorCallback(error);
