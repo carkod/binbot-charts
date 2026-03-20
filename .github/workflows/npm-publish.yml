@@ -37,4 +37,4 @@ jobs:
         with:
           tag_name: ${{ steps.get_tag.outputs.tag }}
           release_name: Release ${{ steps.get_tag.outputs.tag }}
-          generate_release_notes: true
+          token: ${{ secrets.GITHUB_TOKEN }}
