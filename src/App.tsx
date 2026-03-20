@@ -107,7 +107,6 @@ export const App: FC<{}> = (): JSX.Element => {
         onTick={handleTick}
         getLatestBar={getLatestBar}
         exchange={exchangeState}
-        supportedExchanges={[Exchange.BINANCE, Exchange.KUCOIN]}
       />
     </>
   );

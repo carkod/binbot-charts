@@ -108,6 +108,7 @@ const TVChartContainer: FC<TVChartContainerProps> = ({
       autosize: true,
       studies_overrides: {},
       symbol_search_request_delay: 1000,
+      height: "600px",
       overrides: {
         volumePaneSize: "small",
         "mainSeriesProperties.barStyle.dontDrawOpen": false,
