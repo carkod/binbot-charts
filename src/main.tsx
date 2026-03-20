@@ -16,7 +16,6 @@ interface TVChartContainerProps {
   libraryPath?: string;
   timescaleMarks?: any[];
   orderLines?: OrderLine[];
-  height?: string;
   onTick?: (event: any) => void;
   getLatestBar?: (data: any) => void;
   exchange?: string; // Exchange name: 'binance' or 'kucoin'
