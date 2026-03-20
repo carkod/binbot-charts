@@ -1,3 +1,6 @@
+![Publish Package](https://github.com/carkod/binbot-charts/actions/workflows/npm-publish.yml/badge.svg)
+
+
 Binbot charts is default candlestick bars chart used in terminal.binbot.com to render bots graphically, packaged to be used in React.
 Import it in your project as a React component
 
@@ -61,7 +64,7 @@ console.log(binanceConfig.restApiUrl); // "https://api.binance.com"
 3. Run `npm run format` and `npm run test` before pushing to the PR to avoid failed Github checks
 4. To publish:
   - Make your changes and do the usual `git commit` but do not `git push`
-  - you need to run `npm run release-patch`. This follows semver, so you have a few other options, see package.json for more.
+  - you need to run `npm run release:patch`. This follows semver, so you have a few other options, see package.json for more.
   - The release command will push your commit changes
   - If you don't do it this way, it'll fail the release process
 
