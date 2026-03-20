@@ -29,6 +29,7 @@ function MyChart() {
       supportedExchanges={["binance", "kucoin"]}
     />
   );
+}
 ```
 
 ### Props
