@@ -21,6 +21,7 @@ interface TVChartContainerProps {
   getLatestBar?: (data: any) => void;
   exchange?: string; // Exchange name: 'binance' or 'kucoin'
   supportedExchanges?: string[]; // List of supported exchanges
+  style?: React.CSSProperties;
 }
 
 const TVChartContainer: FC<TVChartContainerProps> = ({
@@ -29,11 +30,11 @@ const TVChartContainer: FC<TVChartContainerProps> = ({
   libraryPath = "/charting_library/",
   timescaleMarks = [],
   orderLines = [],
-  height = "calc(100vh - 80px)",
   onTick,
   getLatestBar,
   exchange = "kucoin",
   supportedExchanges = ["kucoin", "binance"],
+  style = { height: "100%" },
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -191,7 +192,7 @@ const TVChartContainer: FC<TVChartContainerProps> = ({
     }
   };
 
-  return <div ref={containerRef} style={{ height: height }} />;
+  return <div ref={containerRef} style={style} />;
 };
 
 export { SUPPORTED_EXCHANGES, Exchange } from "./exchanges";
