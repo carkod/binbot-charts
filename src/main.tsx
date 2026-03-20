@@ -20,9 +20,10 @@ interface TVChartContainerProps {
   onTick?: (event: any) => void;
   getLatestBar?: (data: any) => void;
   exchange?: string; // Exchange name: 'binance' or 'kucoin'
-  supportedExchanges?: string[]; // List of supported exchanges
   style?: React.CSSProperties;
 }
+
+const supportedExchanges = ["kucoin", "binance"];
 
 const TVChartContainer: FC<TVChartContainerProps> = ({
   symbol = "SUPER-USDT",
@@ -33,7 +34,6 @@ const TVChartContainer: FC<TVChartContainerProps> = ({
   onTick,
   getLatestBar,
   exchange = "kucoin",
-  supportedExchanges = ["kucoin", "binance"],
   style = { height: "100%" },
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
