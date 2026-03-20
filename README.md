@@ -1,3 +1,6 @@
+![Publish Package](https://github.com/carkod/binbot-charts/actions/workflows/npm-publish.yml/badge.svg)
+
+
 Binbot charts is default candlestick bars chart used in terminal.binbot.com to render bots graphically, packaged to be used in React.
 Import it in your project as a React component
 
@@ -26,7 +29,6 @@ function MyChart() {
       supportedExchanges={["binance", "kucoin"]}
     />
   );
-}
 ```
 
 ### Props
