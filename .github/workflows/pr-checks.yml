@@ -6,8 +6,8 @@ on:
 
 jobs:
   example-app:
-    name: "Build Example App"
-    description: "Example app helps us debug whether chart component is working isolated from projects that use it"
+    name: "Build example App"
+    description: "example app helps us debug whether chart component is working isolated from projects that use it"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
