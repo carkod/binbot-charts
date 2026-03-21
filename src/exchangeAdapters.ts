@@ -118,9 +118,15 @@ const kucoinAdapter: ExchangeAdapter = {
       );
       let priceScale = 8;
       if (info?.data?.tickSize) {
-        const tickStr = String(info.data.tickSize);
-        const dot = tickStr.indexOf(".");
-        priceScale = dot >= 0 ? Math.max(0, tickStr.length - dot - 1) : 0;
+        const tickNum = Number(info.data.tickSize);
+        if (tickNum < 1 && tickNum > 0) {
+          // Convert to string with up to 16 decimals, trim trailing zeros
+          const fixed = tickNum.toFixed(16).replace(/0+$/, "");
+          const dot = fixed.indexOf(".");
+          priceScale = dot >= 0 ? fixed.length - dot - 1 : 0;
+        } else {
+          priceScale = 0;
+        }
       }
       return { priceScale };
     }
