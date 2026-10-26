@@ -1,7 +1,7 @@
 import { FC, useEffect, useRef } from "react";
 import { useImmer } from "use-immer";
 import { type IOrderLine } from "./charting-library-interfaces";
-import { ResolutionString, widget } from "./charting_library/";
+import { EntityId, ResolutionString, widget } from "./charting_library/";
 import Datafeed from "./datafeed";
 import { SUPPORTED_EXCHANGES } from "./exchanges";
 
@@ -37,7 +37,7 @@ const TVChartContainer: FC<TVChartContainerProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  const [chartOrderLines, setChartOrderLines] = useImmer<any[]>([]);
+  const orderLineIds = useRef(new Map<string, Promise<EntityId>>());
   const [widgetState, setWidgetState] = useImmer<any>(null);
   const prevTimescaleMarks = useRef<any[]>(timescaleMarks);
   const prevExchange = useRef<string>(exchange);
@@ -52,6 +52,7 @@ const TVChartContainer: FC<TVChartContainerProps> = ({
       (symbol !== prevSymbol.current || exchange !== prevExchange.current)
     ) {
       widgetState.remove();
+      orderLineIds.current.clear();
       setWidgetState(null);
       prevSymbol.current = symbol;
       prevExchange.current = exchange;
@@ -146,50 +147,54 @@ const TVChartContainer: FC<TVChartContainerProps> = ({
     });
   };
 
+  // createOrderLine is Trading Platform only, so order lines are drawn as
+  // horizontal_line shapes on the Charting Library.
   const updateOrderLines = (orderLines: OrderLine[]) => {
-    if (chartOrderLines && chartOrderLines.length > 0) {
-      chartOrderLines.forEach((item) => {
-        orderLines.forEach((order) => {
-          if (item.id == order.id) {
-            item
-              .setText(order.text)
-              .setTooltip(order.tooltip)
-              .setQuantity(order.quantity)
-              .setPrice(order.price);
-          }
+    if (!widgetState) return;
+    const chart = widgetState.activeChart();
+    orderLines.forEach((order) => {
+      const label = order.quantity
+        ? `${order.text} ${order.quantity}`
+        : order.text;
+      const properties = {
+        text: label,
+        linecolor: order.color,
+        textcolor: order.color,
+        linestyle: order.lineStyle || 0,
+      };
+      const existing = orderLineIds.current.get(order.id);
+      if (existing) {
+        existing.then((entityId) => {
+          const shape = chart.getShapeById(entityId);
+          shape.setPoints([
+            { time: Math.floor(Date.now() / 1000), price: Number(order.price) },
+          ]);
+          shape.setProperties(properties);
         });
-      });
-    } else {
-      if (widgetState && orderLines && orderLines.length > 0) {
-        orderLines.forEach((order) => {
-          const lineStyle = order.lineStyle || 0;
-          let chartOrderLine = widgetState
-            .chart()
-            .createOrderLine()
-            .setText(order.text)
-            .setTooltip(order.tooltip)
-            .setQuantity(order.quantity)
-            .setQuantityFont("inherit 14px Arial")
-            .setQuantityBackgroundColor(order.color)
-            .setQuantityBorderColor(order.color)
-            .setLineStyle(lineStyle)
-            .setLineLength(25)
-            .setLineColor(order.color)
-            .setBodyFont("inherit 14px Arial")
-            .setBodyBorderColor(order.color)
-            .setBodyTextColor(order.color)
-            .setPrice(order.price);
-
-          // set custom id easier search
-          chartOrderLine.id = order.id;
-
-          setChartOrderLines((draft) => {
-            draft.push(chartOrderLine);
-            return draft;
-          });
-        });
+        return;
       }
-    }
+      orderLineIds.current.set(
+        order.id,
+        chart.createShape(
+          { time: Math.floor(Date.now() / 1000), price: Number(order.price) },
+          {
+            shape: "horizontal_line",
+            lock: true,
+            disableSelection: true,
+            disableSave: true,
+            disableUndo: true,
+            text: label,
+            overrides: {
+              ...properties,
+              linewidth: 2,
+              showLabel: true,
+              horzLabelsAlign: "right",
+              vertLabelsAlign: "top",
+            },
+          },
+        ),
+      );
+    });
   };
 
   return <div ref={containerRef} style={style} />;

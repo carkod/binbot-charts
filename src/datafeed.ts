@@ -94,7 +94,7 @@ interface SymbolInfo {
   pricescale: number;
   has_daily: boolean;
   has_intraday: boolean;
-  has_no_volume: boolean;
+  visible_plots_set: "ohlcv" | "ohlc" | "c";
   has_seconds: boolean;
   seconds_multipliers: number[];
   volume: string;
@@ -193,7 +193,7 @@ export default class Datafeed {
         pricescale: Math.pow(10, priceScale),
         has_daily: true,
         has_intraday: true,
-        has_no_volume: false,
+        visible_plots_set: "ohlcv",
         has_seconds: true,
         seconds_multipliers: [1],
         volume: "hundreds",
