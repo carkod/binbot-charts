@@ -7,7 +7,6 @@ on:
 jobs:
   example-app:
     name: "Build example App"
-    description: "example app helps us debug whether chart component is working isolated from projects that use it"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,7 +19,6 @@ jobs:
 
   test:
     name: "Run unit tests"
-    description: "Vitest test suite to validate code."
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -33,7 +31,6 @@ jobs:
 
   lint:
     name: "Lint Source Code"
-    description: "Checks code style and quality using ESLint."
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
