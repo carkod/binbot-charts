@@ -36,7 +36,7 @@ function setupSockets(
   const socket: WebSocket = new WebSocket(config.wsUrl);
   window.socket = socket;
 
-  socket.onopen = (event) => {
+  socket.onopen = () => {
     console.log("[socket] Connected");
     socket.send(JSON.stringify(subRequest));
 
@@ -103,15 +103,12 @@ function parseBinanceMessage(data: any) {
   const {
     s: symbol,
     t: startTime,
-    T: closeTime,
     i: interval,
     o: open,
     c: close,
     h: high,
     l: low,
     v: volume,
-    n: trades,
-    q: quoteVolume,
   } = data.k;
 
   const channelString = `${symbol.toLowerCase()}@kline_${interval}`;

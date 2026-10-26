@@ -47,8 +47,11 @@ export const SUPPORTED_EXCHANGES: Record<string, ExchangeConfig> = {
         }
         throw new Error("Failed to get KuCoin WebSocket URL: Invalid response");
       } catch (error: any) {
-        throw new Error(
-          `Failed to get KuCoin WebSocket URL: ${error?.message || String(error)}`,
+        throw Object.assign(
+          new Error(
+            `Failed to get KuCoin WebSocket URL: ${error?.message || String(error)}`,
+          ),
+          { cause: error },
         );
       }
     },

@@ -92,6 +92,8 @@
   "exclude": [
     "node_modules",
     "dist",
+    "vite.config.ts",
+    "vitest.config.ts",
     "./src/charting_library",
     "./src/charting_library/charting_library",
   ]
