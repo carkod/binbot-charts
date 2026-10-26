@@ -107,6 +107,7 @@ export const App: FC<{}> = (): JSX.Element => {
         onTick={handleTick}
         getLatestBar={getLatestBar}
         exchange={exchangeState}
+        style={{ flex: 1, minHeight: 0 }}
       />
     </>
   );
