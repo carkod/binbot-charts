@@ -23,13 +23,13 @@ export interface IOrderLine {
   text: string;
   tooltip?: Array<string>;
   quantity?: string;
-  price: Number;
+  price: number;
   color?: string;
 }
 
 export interface ITimescaleMarks {
   id: string;
-  time: Number;
+  time: number;
   color?: string;
   label: string;
   tooltip?: Array<string>;

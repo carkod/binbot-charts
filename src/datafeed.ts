@@ -1,4 +1,4 @@
-import { getAllSymbols, makeApiRequest } from "./helpers";
+import { getAllSymbols } from "./helpers";
 import {
   getExchangeAdapter,
   type ExchangeAdapter,
@@ -6,25 +6,6 @@ import {
 } from "./exchangeAdapters";
 import { subscribeOnStream, unsubscribeFromStream } from "./streaming";
 import { ExchangeConfig } from "./exchanges";
-
-enum BinanceResolutions {
-  one_second = "1s",
-  one_minute = "1m",
-  three_minute = "3m",
-  five_minute = "5m",
-  fifteen_minute = "15m",
-  thirty_minute = "30m",
-  one_hour = "1h",
-  two_hour = "2h",
-  four_hour = "4h",
-  six_hour = "6h",
-  eight_hour = "8h",
-  twelve_hour = "12h",
-  one_day = "1d",
-  three_day = "3d",
-  one_week = "1w",
-  one_month = "1M",
-}
 
 interface ConfigurationData {
   supports_marks: boolean;
@@ -222,9 +203,8 @@ export default class Datafeed {
       return;
     }
 
-    let interval = "60"; // 1 hour
-
     // Calculate interval using resolution data
+    let interval: string;
     if (!/[a-zA-Z]$/.test(resolution)) {
       if (parseInt(resolution) >= 60) {
         interval = parseInt(resolution) / 60 + "h";
@@ -276,10 +256,10 @@ export default class Datafeed {
     from: number,
     to: number,
     onDataCallback: (marks: TimescaleMark[]) => void,
-    resolution: string,
+    _resolution: string,
   ): void {
     if (this.timescaleMarks.length > 0) {
-      let timescaleMarks = Object.assign([], this.timescaleMarks);
+      const timescaleMarks = Object.assign([], this.timescaleMarks);
       onDataCallback(timescaleMarks);
     }
   }

@@ -22,7 +22,10 @@ export async function makeApiRequest(
     }
     return response.json();
   } catch (error: any) {
-    throw new Error(`API request error: ${error?.message || String(error)}`);
+    throw Object.assign(
+      new Error(`API request error: ${error?.message || String(error)}`),
+      { cause: error },
+    );
   }
 }
 
@@ -31,7 +34,7 @@ export async function getAllSymbols(
   apiHost: string = "https://api.binance.com",
   exchange: string = "Binance",
 ) {
-  let newSymbols = [];
+  const newSymbols = [];
   try {
     const data = await makeApiRequest(
       `api/v3/exchangeInfo?symbol=${symbol.toUpperCase()}`,
@@ -49,7 +52,7 @@ export async function getAllSymbols(
         });
       }
     });
-  } catch (e) {
+  } catch {
     return newSymbols;
   }
   return newSymbols;
@@ -67,7 +70,7 @@ export function roundTime(ts: number): number {
   /**
    * @param ts a JavaScript new Date().getTime() timestamp
    */
-  let time = new Date(ts);
+  const time = new Date(ts);
   time.setMinutes(0);
   time.setSeconds(0);
   time.setMilliseconds(0);

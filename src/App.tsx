@@ -10,7 +10,7 @@ import { Exchange } from "./exchanges";
 
 type TimeMarks = Immutable<ITimescaleMarks>;
 
-export const App: FC<{}> = (): JSX.Element => {
+export const App: FC = (): JSX.Element => {
   const [currentPrice, setCurrentPrice] = useState(null);
   const [orderLines, setOrderLines] = useImmer<OrderLine[]>([]);
   const [symbolState, setSymbolState] = useState("SUPERUSDTM");

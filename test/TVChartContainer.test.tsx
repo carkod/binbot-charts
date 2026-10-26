@@ -1,9 +1,9 @@
-import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { vi, describe, it, expect } from 'vitest';
 vi.mock('../src/charting_library', async () => {
   // Use the mock from __mocks__
   return await import('./__mocks__/charting_library.js');
 });
-import { render, screen } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import TVChartContainer from '../src/main';
 
 // Mock ResizeObserver for jsdom

@@ -137,7 +137,7 @@ const TVChartContainer: FC<TVChartContainerProps> = ({
           if (last && getLatestBar) {
             getLatestBar(last);
           }
-        } catch (e) {
+        } catch {
           // exportData may throw if series not ready yet; ignore
         }
       };
