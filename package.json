@@ -1,5 +1,5 @@
 {
-  "version": "0.16.1",
+  "version": "0.16.2",
   "name": "binbot-charts",
   "type": "module",
   "description": "Binbot charts is the default candlestick bars chart used in terminal.binbot.in to render bots graphically.",
@@ -8,7 +8,6 @@
     "url": "git+https://github.com/carkod/binbot-charts.git"
   },
   "dependencies": {
-    "binbot-charts": "^0.12.12",
     "use-immer": "^0.10.0"
   },
   "peerDependencies": {
