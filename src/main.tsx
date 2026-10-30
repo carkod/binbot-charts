@@ -66,9 +66,7 @@ const TVChartContainer: FC<TVChartContainerProps> = ({
       return;
     }
 
-    if (orderLines && orderLines.length > 0) {
-      updateOrderLines(orderLines);
-    }
+    updateOrderLines(orderLines);
 
     if (
       widgetState &&
@@ -151,6 +149,13 @@ const TVChartContainer: FC<TVChartContainerProps> = ({
   const updateOrderLines = (orderLines: OrderLine[]) => {
     if (!widgetState) return;
     const chart = widgetState.activeChart();
+    const nextOrderLineIds = new Set(orderLines.map((order) => order.id));
+    orderLineIds.current.forEach((entityId, id) => {
+      if (!nextOrderLineIds.has(id)) {
+        orderLineIds.current.delete(id);
+        entityId.then((resolvedId) => chart.removeEntity(resolvedId));
+      }
+    });
     orderLines.forEach((order) => {
       const label = order.quantity
         ? `${order.text} ${order.quantity}`

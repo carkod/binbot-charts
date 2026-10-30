@@ -1,4 +1,27 @@
 // Minimal mock for TradingView charting library
+export const chartState = {
+  shapes: new Map(),
+  removed: [],
+  nextId: 1,
+};
+
+const chart = {
+  exportData: () => Promise.resolve({ data: [] }),
+  createShape: (_point, options) => {
+    const id = chartState.nextId++;
+    chartState.shapes.set(id, options);
+    return Promise.resolve(id);
+  },
+  getShapeById: () => ({
+    setPoints: () => {},
+    setProperties: () => {},
+  }),
+  removeEntity: (id) => {
+    chartState.removed.push(id);
+    chartState.shapes.delete(id);
+  },
+};
+
 export class widget {
   constructor(options) {
     this._options = options || {};
@@ -8,9 +31,7 @@ export class widget {
   setSymbol() {}
   remove() {}
   activeChart() {
-    return {
-      exportData: () => Promise.resolve({ data: [] })
-    };
+    return chart;
   }
   chart() {
     return {
