@@ -3,6 +3,8 @@ import { type IOrderLine } from "./charting-library-interfaces";
 import { EntityId, ResolutionString, widget } from "./charting_library/";
 import Datafeed from "./datafeed";
 import { SUPPORTED_EXCHANGES } from "./exchanges";
+import { TimeMarkerOverlay, type TimeMarker } from "./TimeMarkerOverlay";
+export type { TimeMarker } from "./TimeMarkerOverlay";
 
 export interface OrderLine extends IOrderLine {
   id: string;
@@ -20,6 +22,8 @@ interface TVChartContainerProps {
   getLatestBar?: (data: any) => void;
   onOrderLineMove?: (id: string, price: number) => void;
   onOrderLineEditCancel?: () => void;
+  timeMarker?: TimeMarker;
+  onTimeMarkerMove?: (id: string, time: number) => void;
   exchange?: string; // Exchange name: 'binance' or 'kucoin'
   style?: React.CSSProperties;
 }
@@ -36,6 +40,8 @@ const TVChartContainer: FC<TVChartContainerProps> = ({
   getLatestBar,
   onOrderLineMove,
   onOrderLineEditCancel,
+  timeMarker,
+  onTimeMarkerMove,
   exchange = "kucoin",
   style = { height: "100%" },
 }) => {
@@ -302,7 +308,20 @@ const TVChartContainer: FC<TVChartContainerProps> = ({
     });
   };
 
-  return <div ref={containerRef} style={style} />;
+  return (
+    <div style={{ ...style, position: "relative" }}>
+      <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
+      {widgetState && widgetRef.current === widgetState && timeMarker && (
+        <TimeMarkerOverlay
+          widget={widgetState}
+          container={containerRef}
+          marker={timeMarker}
+          onMove={onTimeMarkerMove}
+          onCancel={onOrderLineEditCancel}
+        />
+      )}
+    </div>
+  );
 };
 
 export { SUPPORTED_EXCHANGES, Exchange } from "./exchanges";
