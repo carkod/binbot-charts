@@ -1,55 +1,63 @@
-// Minimal mock for TradingView charting library
 export const chartState = {
   shapes: new Map(),
   removed: [],
   nextId: 1,
+  events: new Map(),
+  shortcuts: new Map(),
+  refreshes: 0,
 };
-
+export const emit = (event, ...args) => chartState.events.get(event)?.(...args);
 const chart = {
   exportData: () => Promise.resolve({ data: [] }),
-  createShape: (_point, options) => {
+  createShape: (point, options) => {
     const id = chartState.nextId++;
-    chartState.shapes.set(id, options);
+    chartState.shapes.set(id, { ...options, points: [point] });
     return Promise.resolve(id);
   },
-  getShapeById: () => ({
-    setPoints: () => {},
-    setProperties: () => {},
+  getShapeById: (id) => ({
+    getPoints: () => chartState.shapes.get(id).points,
+    setPoints: (points) => {
+      chartState.shapes.get(id).points = points;
+      emit("drawing_event", id, "points_changed");
+    },
+    setProperties: (props) =>
+      Object.assign(chartState.shapes.get(id).overrides, props),
+    setSelectionEnabled: (enabled) => {
+      chartState.shapes.get(id).disableSelection = !enabled;
+    },
+    setUserEditEnabled: (enabled) => {
+      chartState.shapes.get(id).lock = !enabled;
+    },
   }),
+  refreshMarks: () => {
+    chartState.refreshes++;
+  },
   removeEntity: (id) => {
     chartState.removed.push(id);
     chartState.shapes.delete(id);
   },
 };
-
 export class widget {
   constructor(options) {
     this._options = options || {};
   }
-  onChartReady(cb) { cb(); }
-  subscribe() {}
+  onChartReady(cb) {
+    cb();
+  }
+  subscribe(event, callback) {
+    chartState.events.set(event, callback);
+  }
+  unsubscribe(event) {
+    chartState.events.delete(event);
+  }
+  onShortcut(key, callback) {
+    chartState.shortcuts.set(key, callback);
+  }
   setSymbol() {}
-  remove() {}
+  remove() {
+    chartState.events.clear();
+  }
   activeChart() {
     return chart;
-  }
-  chart() {
-    return {
-      createOrderLine: () => ({
-        setText: function() { return this; },
-        setTooltip: function() { return this; },
-        setQuantity: function() { return this; },
-        setQuantityFont: function() { return this; },
-        setQuantityBackgroundColor: function() { return this; },
-        setQuantityBorderColor: function() { return this; },
-        setLineStyle: function() { return this; },
-        setLineLength: function() { return this; },
-        setLineColor: function() { return this; },
-        setBodyFont: function() { return this; },
-        setBodyBorderColor: function() { return this; },
-        setBodyTextColor: function() { return this; },
-        setPrice: function() { return this; },
-      })
-    };
   }
 }

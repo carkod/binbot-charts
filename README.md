@@ -42,6 +42,15 @@ function MyChart() {
 - `orderLines` (optional): Array of order lines to display on the chart
 - `onTick` (optional): Callback function for real-time tick updates
 - `getLatestBar` (optional): Callback function to get the latest bar data
+- `onOrderLineMove` (optional): Receives `(id, price)` after a user finishes dragging an editable order line. Update the matching line in `orderLines` to accept the price; otherwise the line returns to its controlled price.
+- `onOrderLineEditCancel` (optional): Called when Escape is pressed inside the chart. Set the selected line's `editable` flag to `false` to lock it again.
+
+Each order line supports `editable?: boolean` (default `false`). A form can set
+this flag on the line associated with its focused input. Keep that selection when
+focus transfers into the chart iframe, and clear it when another field is selected
+or the user clicks outside the chart. Price callbacks report price units; the
+consumer is responsible for converting prices to percentages and validating them.
+Programmatic price updates do not emit drag callbacks.
 
 ### Exchange Configuration
 

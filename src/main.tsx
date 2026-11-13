@@ -1,5 +1,4 @@
-import { FC, useEffect, useRef } from "react";
-import { useImmer } from "use-immer";
+import { FC, useEffect, useRef, useState } from "react";
 import { type IOrderLine } from "./charting-library-interfaces";
 import { EntityId, ResolutionString, widget } from "./charting_library/";
 import Datafeed from "./datafeed";
@@ -8,6 +7,7 @@ import { SUPPORTED_EXCHANGES } from "./exchanges";
 export interface OrderLine extends IOrderLine {
   id: string;
   lineStyle?: number;
+  editable?: boolean;
 }
 
 interface TVChartContainerProps {
@@ -18,6 +18,8 @@ interface TVChartContainerProps {
   orderLines?: OrderLine[];
   onTick?: (event: any) => void;
   getLatestBar?: (data: any) => void;
+  onOrderLineMove?: (id: string, price: number) => void;
+  onOrderLineEditCancel?: () => void;
   exchange?: string; // Exchange name: 'binance' or 'kucoin'
   style?: React.CSSProperties;
 }
@@ -32,53 +34,120 @@ const TVChartContainer: FC<TVChartContainerProps> = ({
   orderLines = [],
   onTick,
   getLatestBar,
+  onOrderLineMove,
+  onOrderLineEditCancel,
   exchange = "kucoin",
   style = { height: "100%" },
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
+  const latest = useRef({
+    orderLines,
+    onOrderLineMove,
+    onOrderLineEditCancel,
+    onTick,
+    getLatestBar,
+  });
+  latest.current = {
+    orderLines,
+    onOrderLineMove,
+    onOrderLineEditCancel,
+    onTick,
+    getLatestBar,
+  };
+  const entityLines = useRef(new Map<EntityId, string>());
+  const pointerDown = useRef(false);
+  const movedEntity = useRef<EntityId | null>(null);
   const orderLineIds = useRef(new Map<string, Promise<EntityId>>());
-  const [widgetState, setWidgetState] = useImmer<any>(null);
-  const prevTimescaleMarks = useRef<any[]>(timescaleMarks);
-  const prevExchange = useRef<string>(exchange);
-  const prevSymbol = useRef<string>(symbol);
+  const [widgetState, setWidgetState] = useState<any>(null);
+  const widgetRef = useRef<any>(null);
+  useEffect(() => {
+    if (!widgetState || widgetRef.current !== widgetState) return;
+    updateOrderLines(orderLines);
+  }, [orderLines, widgetState]);
 
   useEffect(() => {
+    if (!widgetState || widgetRef.current !== widgetState) return;
+    widgetState._options.datafeed.timescaleMarks = timescaleMarks;
+    widgetState.activeChart().refreshMarks();
+  }, [timescaleMarks, widgetState]);
+
+  useEffect(() => {
+    if (!widgetState || widgetRef.current !== widgetState) return;
+    let frame = 0;
+    const finishMove = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        pointerDown.current = false;
+        const entityId = movedEntity.current;
+        movedEntity.current = null;
+        if (entityId == null) return;
+        const id = entityLines.current.get(entityId);
+        const line = latest.current.orderLines.find((line) => line.id === id);
+        if (!line) return;
+        const shape = widgetState.activeChart().getShapeById(entityId);
+        const price = shape.getPoints()[0]?.price;
+        // Restore the controlled price. The consumer may accept the drop and
+        // send a new price, or reject it without leaving a misleading line.
+        shape.setPoints([
+          { time: Math.floor(Date.now() / 1000), price: line.price },
+        ]);
+        if (
+          line.editable &&
+          Number.isFinite(price) &&
+          price > 0 &&
+          price !== line.price
+        ) {
+          latest.current.onOrderLineMove?.(line.id, price);
+        }
+      });
+    };
+    const down = () => {
+      pointerDown.current = true;
+    };
+    const up = () => {
+      finishMove();
+    };
+    const drawing = (entityId: EntityId, event: string) => {
+      if (!pointerDown.current || !["move", "points_changed"].includes(event))
+        return;
+      const id = entityLines.current.get(entityId);
+      if (
+        latest.current.orderLines.some(
+          (line) => line.id === id && line.editable,
+        )
+      ) {
+        movedEntity.current = entityId;
+      }
+    };
+    widgetState.subscribe("mouse_down", down);
+    widgetState.subscribe("mouse_up", up);
+    widgetState.subscribe("drawing_event", drawing);
+    widgetState.onShortcut(27, () => {
+      pointerDown.current = false;
+      movedEntity.current = null;
+      cancelAnimationFrame(frame);
+      latest.current.onOrderLineEditCancel?.();
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+      pointerDown.current = false;
+      movedEntity.current = null;
+      if (widgetRef.current === widgetState) {
+        widgetState.unsubscribe("mouse_down", down);
+        widgetState.unsubscribe("mouse_up", up);
+        widgetState.unsubscribe("drawing_event", drawing);
+      }
+    };
+  }, [widgetState]);
+
+  useEffect(() => {
+    setWidgetState(null);
+    orderLineIds.current.clear();
+    entityLines.current.clear();
     if (!symbol) return;
-
-    // If widget exists and symbol or exchange changed, tear down and reinitialize
-    if (
-      widgetState &&
-      (symbol !== prevSymbol.current || exchange !== prevExchange.current)
-    ) {
-      widgetState.remove();
-      orderLineIds.current.clear();
-      setWidgetState(null);
-      prevSymbol.current = symbol;
-      prevExchange.current = exchange;
-      return; // Will reinitialize on next render with widgetState === null
-    }
-
-    if (!widgetState) {
-      initializeChart(interval);
-      prevSymbol.current = symbol;
-      prevExchange.current = exchange;
-      return;
-    }
-
-    updateOrderLines(orderLines);
-
-    if (
-      widgetState &&
-      prevTimescaleMarks.current &&
-      timescaleMarks !== prevTimescaleMarks.current
-    ) {
-      widgetState._options.datafeed.timescaleMarks = timescaleMarks;
-      prevTimescaleMarks.current = timescaleMarks;
-    }
-  }, [symbol, orderLines, timescaleMarks, exchange, widgetState, interval]);
-
-  const initializeChart = (interval: ResolutionString) => {
+    let disposed = false;
+    let priceTimer: ReturnType<typeof setTimeout>;
     // Get exchange configuration
     const exchangeConfig = SUPPORTED_EXCHANGES[exchange.toLowerCase()];
     if (!exchangeConfig) {
@@ -113,9 +182,13 @@ const TVChartContainer: FC<TVChartContainerProps> = ({
       },
     };
     const tvWidget = new widget(widgetOptions);
+    widgetRef.current = tvWidget;
 
     tvWidget.onChartReady(() => {
-      tvWidget.subscribe("onTick", (event: any) => onTick && onTick(event));
+      if (disposed) return;
+      tvWidget.subscribe("onTick", (event: any) =>
+        latest.current.onTick?.(event),
+      );
       setWidgetState(tvWidget);
 
       // get latest bar for last price, guard against null/empty
@@ -132,28 +205,38 @@ const TVChartContainer: FC<TVChartContainerProps> = ({
             data?.data && data.data.length > 0
               ? data.data[data.data.length - 1]
               : null;
-          if (last && getLatestBar) {
-            getLatestBar(last);
+          if (!disposed && last) {
+            latest.current.getLatestBar?.(last);
           }
         } catch {
           // exportData may throw if series not ready yet; ignore
         }
       };
       // slight defer to let series attach
-      setTimeout(prices, 300);
+      priceTimer = setTimeout(prices, 300);
     });
-  };
+    return () => {
+      disposed = true;
+      clearTimeout(priceTimer);
+      widgetRef.current = null;
+      tvWidget.remove();
+    };
+  }, [symbol, exchange, interval, libraryPath]);
 
   // createOrderLine is Trading Platform only, so order lines are drawn as
   // horizontal_line shapes on the Charting Library.
   const updateOrderLines = (orderLines: OrderLine[]) => {
-    if (!widgetState) return;
+    if (!widgetState || widgetRef.current !== widgetState) return;
     const chart = widgetState.activeChart();
     const nextOrderLineIds = new Set(orderLines.map((order) => order.id));
     orderLineIds.current.forEach((entityId, id) => {
       if (!nextOrderLineIds.has(id)) {
         orderLineIds.current.delete(id);
-        entityId.then((resolvedId) => chart.removeEntity(resolvedId));
+        entityId.then((resolvedId) => {
+          if (widgetRef.current !== widgetState) return;
+          entityLines.current.delete(resolvedId);
+          chart.removeEntity(resolvedId);
+        });
       }
     });
     orderLines.forEach((order) => {
@@ -169,34 +252,52 @@ const TVChartContainer: FC<TVChartContainerProps> = ({
       const existing = orderLineIds.current.get(order.id);
       if (existing) {
         existing.then((entityId) => {
+          if (
+            widgetRef.current !== widgetState ||
+            orderLineIds.current.get(order.id) !== existing
+          )
+            return;
           const shape = chart.getShapeById(entityId);
-          shape.setPoints([
-            { time: Math.floor(Date.now() / 1000), price: Number(order.price) },
-          ]);
+          if (!pointerDown.current || !order.editable) {
+            shape.setPoints([
+              {
+                time: Math.floor(Date.now() / 1000),
+                price: Number(order.price),
+              },
+            ]);
+          }
+          shape.setUserEditEnabled(Boolean(order.editable));
+          shape.setSelectionEnabled(Boolean(order.editable));
           shape.setProperties(properties);
         });
         return;
       }
       orderLineIds.current.set(
         order.id,
-        chart.createShape(
-          { time: Math.floor(Date.now() / 1000), price: Number(order.price) },
-          {
-            shape: "horizontal_line",
-            lock: true,
-            disableSelection: true,
-            disableSave: true,
-            disableUndo: true,
-            text: label,
-            overrides: {
-              ...properties,
-              linewidth: 2,
-              showLabel: true,
-              horzLabelsAlign: "right",
-              vertLabelsAlign: "top",
+        chart
+          .createShape(
+            { time: Math.floor(Date.now() / 1000), price: Number(order.price) },
+            {
+              shape: "horizontal_line",
+              lock: !order.editable,
+              disableSelection: !order.editable,
+              disableSave: true,
+              disableUndo: true,
+              text: label,
+              overrides: {
+                ...properties,
+                linewidth: 2,
+                showLabel: true,
+                horzLabelsAlign: "right",
+                vertLabelsAlign: "top",
+              },
             },
-          },
-        ),
+          )
+          .then((entityId) => {
+            if (widgetRef.current !== widgetState) return entityId;
+            entityLines.current.set(entityId, order.id);
+            return entityId;
+          }),
       );
     });
   };
