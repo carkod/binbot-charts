@@ -299,7 +299,7 @@ const TVChartContainer: FC<TVChartContainerProps> = ({
               },
             },
           )
-          .then((entityId) => {
+          .then((entityId: EntityId) => {
             if (widgetRef.current !== widgetState) return entityId;
             entityLines.current.set(entityId, order.id);
             return entityId;
