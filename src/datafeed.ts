@@ -258,10 +258,7 @@ export default class Datafeed {
     onDataCallback: (marks: TimescaleMark[]) => void,
     _resolution: string,
   ): void {
-    if (this.timescaleMarks.length > 0) {
-      const timescaleMarks = Object.assign([], this.timescaleMarks);
-      onDataCallback(timescaleMarks);
-    }
+    onDataCallback([...this.timescaleMarks]);
   }
 
   async getServerTime(

@@ -42,6 +42,48 @@ function MyChart() {
 - `orderLines` (optional): Array of order lines to display on the chart
 - `onTick` (optional): Callback function for real-time tick updates
 - `getLatestBar` (optional): Callback function to get the latest bar data
+- `onOrderLineMove` (optional): Receives `(id, price)` after a user finishes dragging an editable order line. Update the matching line in `orderLines` to accept the price; otherwise the line returns to its controlled price.
+- `onOrderLineEditCancel` (optional): Called when Escape is pressed inside the chart. Set the selected line's `editable` flag to `false` to lock it again.
+
+Each order line supports `editable?: boolean` (default `false`). A form can set
+this flag on the line associated with its focused input. Keep that selection when
+focus transfers into the chart iframe, and clear it when another field is selected
+or the user clicks outside the chart. Price callbacks report price units; the
+consumer is responsible for converting prices to percentages and validating them.
+Programmatic price updates do not emit drag callbacks.
+
+### Editing an expiry timestamp
+
+Native timescale marks are not draggable. Pass a `timeMarker` while the expiry
+input is selected to show a draggable vertical line and an X handle on the time
+axis. Omit it on blur outside the chart or Escape. Keep the selection when focus
+moves into the chart so the user can drag.
+
+```tsx
+<TVChartContainer
+  timeMarker={editingExpiry ? {
+    id: "conditional_expiry",
+    time: expiresAt / 1000,
+    text: "Conditional entry expires",
+    color: "#e056b5",
+  } : undefined}
+  onTimeMarkerMove={(_id, seconds) => setExpiresAt(seconds * 1000)}
+  onOrderLineEditCancel={() => setEditingExpiry(false)}
+/>
+```
+
+`onTimeMarkerMove(id, time)` reports Unix seconds continuously during dragging;
+update `timeMarker.time` to accept the change. Dragging uses minute precision;
+the focused handle also supports Left/Right for one minute and Shift+Left/Right
+for one hour. Update any related `timescaleMarks` from the same timestamp.
+
+The overlay supports fixed-duration crypto intervals (seconds, minutes, days,
+weeks) and projects future timestamps using actual candle spacing. It does not
+snap future expiry to the last candle. It appears once candles are loaded and
+the timestamp is visible; pan the chart if needed. Monthly and non-time-based
+intervals do not show this handle. Plot positioning measures the canvas in the
+bundled same-origin TradingView iframe and follows chart scrolling, zooming,
+and resizing.
 
 ### Exchange Configuration
 
