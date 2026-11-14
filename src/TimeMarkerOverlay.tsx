@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useLayoutEffect, useRef, useState, type RefObject } from "react";
 import type { IChartingLibraryWidget } from "./charting_library";
 import { intervalSeconds, timeScaleMapping } from "./time-scale";
 
@@ -41,7 +41,9 @@ export function TimeMarkerOverlay({
     offset: number;
   } | null>(null);
 
-  useEffect(() => {
+  // Release chart subscriptions before React detaches the iframe or the
+  // parent's passive cleanup removes the widget.
+  useLayoutEffect(() => {
     const chart = widget.activeChart();
     const scale = chart.getTimeScale();
     let frame = 0;
