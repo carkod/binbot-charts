@@ -1,4 +1,4 @@
-import { FC, useEffect, useRef, useState } from "react";
+import { FC, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { type IOrderLine } from "./charting-library-interfaces";
 import { EntityId, ResolutionString, widget } from "./charting_library/";
 import Datafeed from "./datafeed";
@@ -78,7 +78,9 @@ const TVChartContainer: FC<TVChartContainerProps> = ({
     widgetState.activeChart().refreshMarks();
   }, [timescaleMarks, widgetState]);
 
-  useEffect(() => {
+  // Unsubscribe while the iframe is attached; passive cleanup runs after
+  // React removes its DOM and TradingView loses the inner window API.
+  useLayoutEffect(() => {
     if (!widgetState || widgetRef.current !== widgetState) return;
     let frame = 0;
     const finishMove = () => {
@@ -299,7 +301,7 @@ const TVChartContainer: FC<TVChartContainerProps> = ({
               },
             },
           )
-          .then((entityId) => {
+          .then((entityId: EntityId) => {
             if (widgetRef.current !== widgetState) return entityId;
             entityLines.current.set(entityId, order.id);
             return entityId;
